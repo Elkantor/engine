@@ -2,7 +2,8 @@
 
 #include <Windows.h>
 #include <stdbool.h>
-#include <stdint.h>
+#include <wingdi.h>
+#include <stddef.h>
 
 #include "../../../display.c"
 
@@ -42,7 +43,13 @@ typedef enum
     MDT_DEFAULT = MDT_EFFECTIVE_DPI 
 } MONITOR_DPI_TYPE;
 
-typedef HRESULT(WINAPI *GetDpiForMonitorType)(HMONITOR _hmonitor, MONITOR_DPI_TYPE _dpiType, UINT* _dpiX, UINT* _dpiY);
+typedef HRESULT(WINAPI *getDpiForMonitor_t)(HMONITOR _hmonitor, MONITOR_DPI_TYPE _dpiType, UINT* _dpiX, UINT* _dpiY);
+
+typedef struct
+{
+    displayDataArray_t* m_displaysPtr;
+    getDpiForMonitor_t m_getDpiForMonitorPtr;
+} EnumDisplayMonitorsCallbackParams_t;
 
 BOOL CALLBACK EnumerationCallback(HMONITOR _monitor, HDC _hdcUnused, LPRECT _rectUnused, LPARAM _lparam)
 {
@@ -55,39 +62,52 @@ BOOL CALLBACK EnumerationCallback(HMONITOR _monitor, HDC _hdcUnused, LPRECT _rec
 		return false;
 	}
 
-    displayDataArray_t* displays = (displayDataArray_t*)_lparam;
+    EnumDisplayMonitorsCallbackParams_t* params = (EnumDisplayMonitorsCallbackParams_t*)_lparam;
+    displayDataArray_t* displays = params->m_displaysPtr;
 
     size_t freeSlot = displays->m_size;
 	displayData_t* current = &displays->m_elems[freeSlot];
 
-	strncpy(current->m_name, info.szDevice, 31);
-	current->m_name[31] = 0;
-	current->m_index = freeSlot;
-	current->m_monitor = _monitor;
-	current->m_primary = (info.dwFlags & MONITORINFOF_PRIMARY) != 0;
-	current->m_available = true;
-	current->m_x = info.rcMonitor.left;
-	current->m_y = info.rcMonitor.top;
-	current->m_width = info.rcMonitor.right - info.rcMonitor.left;
-	current->m_height = info.rcMonitor.bottom - info.rcMonitor.top;
+    // Get common display data
+    {
+        strncpy(current->m_name, info.szDevice, 31);
+        current->m_name[31] = 0;
+        current->m_index = freeSlot;
+        current->m_monitor = _monitor;
+        current->m_primary = (info.dwFlags & MONITORINFOF_PRIMARY) != 0;
+        current->m_available = true;
+        current->m_x = info.rcMonitor.left;
+        current->m_y = info.rcMonitor.top;
+        current->m_width = info.rcMonitor.right - info.rcMonitor.left;
+        current->m_height = info.rcMonitor.bottom - info.rcMonitor.top;
 
-	HDC hdc = CreateDCA(NULL, current->m_name, NULL, NULL);
-	current->m_ppi = GetDeviceCaps(hdc, LOGPIXELSX);
-	int scale = GetDeviceCaps(hdc, SCALINGFACTORX);
-	DeleteDC(hdc);
+        HDC hdc = CreateDCA(NULL, current->m_name, NULL, NULL);
+        current->m_ppi = GetDeviceCaps(hdc, LOGPIXELSX);
+        DeleteDC(hdc);
+    }
 
-	// if (MyGetDpiForMonitor != NULL) 
-    // {
-	// 	unsigned dpiX, dpiY;
-	// 	MyGetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
-	// 	display->ppi = (int)dpiX;
-	// }
+    // Get dpi for this monitor
+    {
+        getDpiForMonitor_t getDpiForMonitor = params->m_getDpiForMonitorPtr;
+        
+        if (getDpiForMonitor != NULL) 
+        {
+            unsigned dpiX, dpiY;
+            getDpiForMonitor(_monitor, MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
+            current->m_ppi = (int)dpiX;
+        }
+    }
 
-	// memset(&original_modes[free_slot], 0, sizeof(DEVMODEA));
-	// original_modes[free_slot].dmSize = sizeof(DEVMODEA);
-	//EnumDisplaySettingsA(current->m_name, ENUM_CURRENT_SETTINGS, &original_modes[free_slot]);
-	//display->frequency = original_modes[free_slot].dmDisplayFrequency;
-	//display->bpp = original_modes[free_slot].dmBitsPerPel;
+    // Get bpp and frequency for this monitor
+    {
+        DEVMODEA devmodeA;
+        memset(&devmodeA, 0, sizeof(DEVMODEA));
+	    
+        devmodeA.dmSize = sizeof(DEVMODEA);
+	    EnumDisplaySettingsA(current->m_name, ENUM_CURRENT_SETTINGS, &devmodeA);
+	    current->m_frequency = devmodeA.dmDisplayFrequency;
+	    current->m_bpp = devmodeA.dmBitsPerPel;
+    }
 
 	displays->m_size += 1;
 	return TRUE;
@@ -96,11 +116,18 @@ BOOL CALLBACK EnumerationCallback(HMONITOR _monitor, HDC _hdcUnused, LPRECT _rec
 void displayInit(displayDataArray_t* _displays) 
 {
 	HMODULE shcore = LoadLibraryA("Shcore.dll");
-	
+	getDpiForMonitor_t getDpiForMonitorPtr = NULL;
+
     if (shcore != NULL) 
     {
-		GetDpiForMonitorType MyGetDpiForMonitor = (GetDpiForMonitorType)GetProcAddress(shcore, "GetDpiForMonitor");
+		getDpiForMonitorPtr = (getDpiForMonitor_t)GetProcAddress(shcore, "GetDpiForMonitor");
 	}
+
 	memset(_displays, 0, sizeof(*_displays));
-	EnumDisplayMonitors(NULL, NULL, EnumerationCallback, (LPARAM)_displays);
+
+    EnumDisplayMonitorsCallbackParams_t params;
+    params.m_displaysPtr = _displays;
+    params.m_getDpiForMonitorPtr = getDpiForMonitorPtr;
+
+	EnumDisplayMonitors(NULL, NULL, EnumerationCallback, (LPARAM)&params);
 }
