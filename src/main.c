@@ -18,5 +18,8 @@ int kickstart(int argc, char **argv)
     windowOptions_t firstWindowOptions;
 	windowOptionsSetDefaults(&firstWindowOptions);
 
+    static app_t app;
+    const int firstWindow = appInit(&app, "MultiWindow", 1024, 768, &firstWindowOptions, NULL);
+
     return 0;
 }

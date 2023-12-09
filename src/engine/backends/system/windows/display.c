@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Windows.h>
+#include <libloaderapi.h>
 #include <stdbool.h>
 #include <wingdi.h>
 #include <stddef.h>
@@ -30,7 +31,7 @@ typedef struct
     size_t m_size;
 } displayDataArray_t;
 
-size_t displaysCapacityGet(void)
+size_t displaysDataArrayCapacityGet(void)
 {
     return offsetof(displayDataArray_t, m_size) / sizeof(displayData_t);
 }
@@ -130,4 +131,6 @@ void displayInit(displayDataArray_t* _displays)
     params.m_getDpiForMonitorPtr = getDpiForMonitorPtr;
 
 	EnumDisplayMonitors(NULL, NULL, EnumerationCallback, (LPARAM)&params);
+
+    FreeLibrary(shcore);
 }
