@@ -151,3 +151,17 @@ void displayInit(displayDataArray_t* _displays)
 
     FreeLibrary(shcore);
 }
+
+void displayRestore(displayDataArray_t* _displays)
+{
+    for (uint32_t i = 0; _displays->m_size; ++i)
+    {
+        displayData_t* current = &_displays->m_data[i];
+
+        if (current->m_modeChanged)
+        {
+            // NOTE(Victor): Getting back to default, see https://learn.microsoft.com/fr-fr/windows/win32/api/winuser/nf-winuser-changedisplaysettingsa
+            ChangeDisplaySettingsA(NULL, 0);
+        }
+    }
+}

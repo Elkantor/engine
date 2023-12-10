@@ -10,6 +10,7 @@
 #include "display.c"
 #include "../../../window.c"
 #include "../../../system.c"
+#include "../../../graphics.c"
 
 typedef struct
 {
@@ -97,6 +98,11 @@ bool internalFrame(app_t* _app)
 	return _app->m_running;
 }
 
+void appStop(app_t* _app)
+{
+    displayRestore(&_app->m_displays);
+}
+
 void appStart(app_t* _app)
 {
 	_app->m_running = true;
@@ -140,7 +146,7 @@ void appInit(app_t* _app, const char* _name, const int _width, const int _height
 	windowCreate(&_app->m_displays, windowData, false);
 	_app->m_windows.m_size += 1;
 
-	//graphicsInternalWindowInit()
+	graphicsWindowInit();
 
 	windowShow(windowData);
 }

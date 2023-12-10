@@ -19,3 +19,4 @@ typedef struct displayDataArray displayDataArray_t;
 uint32_t displaysDataArrayCapacityGet(void);
 uint32_t displayPrimaryGet(displayDataArray_t* _displays);
 void displayInit(displayDataArray_t* _displays);
+void displayRestore(displayDataArray_t* _displays);

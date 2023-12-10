@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "engine/backends/graphics/opengl/graphics.c"
 #include "engine/backends/system/windows/system.c"
 
 // NOTE(Victor): build with mingw on windows:
@@ -14,11 +15,6 @@ void appUpdate(app_t* _app)
 	int test = 0;
 }
 
-void appStop(app_t* _app)
-{
-    int test = 0;
-}
-
 int appKickstart(int argc, char **argv)
 {
     printf("Inside kickstart 2\n");
@@ -26,6 +22,6 @@ int appKickstart(int argc, char **argv)
     static app_t app;
     appInit(&app, "MultiWindow", 1024, 768);
     appStart(&app);
-    
+
     return 0;
 }

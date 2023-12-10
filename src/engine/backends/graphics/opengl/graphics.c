@@ -1,6 +1,8 @@
 #pragma once
 
-void graphicsInternalInit(void)
-{
+#include "../../../graphics.c"
 
+void graphicsWindowInit(void)
+{
+    
 }
