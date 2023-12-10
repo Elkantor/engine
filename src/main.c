@@ -13,7 +13,6 @@
 
 void appUpdate(app_t* _app)
 {
-	int test = 0;
 }
 
 int appKickstart(int argc, char **argv)
@@ -22,6 +21,13 @@ int appKickstart(int argc, char **argv)
 
     static app_t app;
     appInit(&app, "MultiWindow", 1024, 768);
+
+    // Init graphic pipeline
+    // {
+    //     pipeline_t pipeline;
+    //     pipelineInit
+    // }
+
     appStart(&app);
 
     return 0;

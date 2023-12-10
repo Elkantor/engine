@@ -7,35 +7,6 @@
 #include <stddef.h>
 
 #include "../../../display.c"
-#include "../../../string/string32.c"
-
-typedef struct displayData
-{
-	struct HMONITOR__* m_monitor;
-	string32_t m_name;
-	int m_index;
-    int m_x;
-    int m_y;
-    int m_width;
-    int m_height;
-    int m_ppi;
-    int m_frequency;
-    int m_bpp;
-	bool m_primary;
-    bool m_available;
-    bool m_modeChanged;
-} displayData_t;
-
-typedef struct displayDataArray
-{
-    displayData_t m_data[8];
-    uint32_t m_size;
-} displayDataArray_t;
-
-uint32_t displaysDataArrayCapacityGet(void)
-{
-    return offsetof(displayDataArray_t, m_size) / sizeof(displayData_t);
-}
 
 uint32_t displayPrimaryGet(displayDataArray_t* _displays)
 {
@@ -91,7 +62,7 @@ BOOL CALLBACK EnumerationCallback(HMONITOR _monitor, HDC _hdcUnused, LPRECT _rec
         strncpy(current->m_name.m_data, info.szDevice, string32Capacity);
         current->m_name.m_data[string32Capacity - 1] = 0;
         current->m_index = freeSlot;
-        current->m_monitor = _monitor;
+        current->m_monitorHandle = _monitor;
         current->m_primary = (info.dwFlags & MONITORINFOF_PRIMARY) != 0;
         current->m_available = true;
         current->m_x = info.rcMonitor.left;
@@ -154,7 +125,7 @@ void displayInit(displayDataArray_t* _displays)
 
 void displayRestore(displayDataArray_t* _displays)
 {
-    for (uint32_t i = 0; _displays->m_size; ++i)
+    for (uint32_t i = 0; i < _displays->m_size; ++i)
     {
         displayData_t* current = &_displays->m_data[i];
 

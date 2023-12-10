@@ -55,10 +55,6 @@ typedef struct
 	int m_windowFeatures;
 	windowMode_t m_mode;
 	bool m_visible;
-
-	void (*m_resizeCallback)(const int _x, const int _y, void* _data);
-	void (*m_ppiCallback)(const int _ppi, void* _data);
-	bool (*m_closeCallback)(void* _data);
 } windowData_t;
 
 void windowDataDefaultSet(windowData_t* _win)
@@ -74,10 +70,6 @@ void windowDataDefaultSet(windowData_t* _win)
 	_win->m_windowFeatures = WINDOW_FEATURE_RESIZEABLE | WINDOW_FEATURE_MINIMIZABLE | WINDOW_FEATURE_MAXIMIZABLE;
 	_win->m_mode = WINDOW_MODE_WINDOW;
 	_win->m_visible = true;
-
-	_win->m_resizeCallback = NULL;
-	_win->m_ppiCallback = NULL;
-	_win->m_closeCallback = NULL;
 }
 
 typedef struct
@@ -93,3 +85,5 @@ uint32_t windowArrayCapacityGet(void)
 
 void windowCreate(displayDataArray_t* _displays, windowData_t* _windowData, const bool _appInitialized);
 void windowShow(windowData_t* _window);
+void windowDestroy(void* _handle);
+uint32_t windowIndexGet(void* _handle);

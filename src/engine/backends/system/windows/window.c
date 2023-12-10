@@ -3,12 +3,45 @@
 #include <stddef.h>
 #include <Windows.h>
 #include <WinUser.h>
+#include <stdint.h>
+#include <string.h>
 #include <windef.h>
 #include <DbgHelp.h>
 
 #include "../../../utils/recti32_t.c"
+#include "../../../system.c"
 #include "../../../window.c"
 #include "display.c"
+#include "system.c"
+
+uint32_t windowIndexGet(void* _handle)
+{
+	for (uint32_t i = 0; i < appPtr->m_windows.m_size; ++i)
+	{
+		windowData_t* current = &appPtr->m_windows.m_data[i];
+
+		if (current->m_handle == _handle)
+		{
+			return i;
+		}
+	}
+
+	return UINT32_MAX;
+}
+
+void windowDestroy(void* _handle)
+{
+	const uint32_t windowIndex = windowIndexGet(_handle); 
+
+	if (windowIndex == UINT32_MAX)
+	{
+		return;
+	}
+
+	DestroyWindow(_handle);
+	memset(&appPtr->m_windows.m_data[windowIndex], 0, sizeof(appPtr->m_windows.m_data[0]));
+	appPtr->m_windows.m_data[windowIndex] = appPtr->m_windows.m_data[--appPtr->m_windows.m_size];
+}
 
 LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LPARAM _lParam)
 {
@@ -21,12 +54,23 @@ LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LP
 	{
 		case WM_NCCREATE:
 		{
-
 			break;
 		}
 		case /*WM_DPICHANGED*/ 0x02E0: 
 		{
 			break;
+		}
+
+		case WM_CLOSE:
+		{
+			windowDestroy(_hWnd);
+
+			if (appPtr->m_windows.m_size == 0)
+			{
+				appStop(appPtr);
+			}
+			
+			return 0;
 		}
 	}
 
