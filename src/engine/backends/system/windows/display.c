@@ -7,11 +7,12 @@
 #include <stddef.h>
 
 #include "../../../display.c"
+#include "../../../string/string32.c"
 
-typedef struct
+typedef struct displayData
 {
 	struct HMONITOR__* m_monitor;
-	char m_name[32];
+	string32_t m_name;
 	int m_index;
     int m_x;
     int m_y;
@@ -25,15 +26,30 @@ typedef struct
     bool m_modeChanged;
 } displayData_t;
 
-typedef struct
+typedef struct displayDataArray
 {
-    displayData_t m_elems[8];
-    size_t m_size;
+    displayData_t m_data[8];
+    uint32_t m_size;
 } displayDataArray_t;
 
-size_t displaysDataArrayCapacityGet(void)
+uint32_t displaysDataArrayCapacityGet(void)
 {
     return offsetof(displayDataArray_t, m_size) / sizeof(displayData_t);
+}
+
+uint32_t displayPrimaryGet(displayDataArray_t* _displays)
+{
+	for (uint32_t i = 0; i < _displays->m_size; ++i)
+    {
+		displayData_t* display = &_displays->m_data[i];
+
+		if (display->m_available && display->m_primary)
+        {
+			return i;
+		}
+	}
+
+	return UINT32_MAX;
 }
 
 typedef enum
@@ -66,13 +82,14 @@ BOOL CALLBACK EnumerationCallback(HMONITOR _monitor, HDC _hdcUnused, LPRECT _rec
     EnumDisplayMonitorsCallbackParams_t* params = (EnumDisplayMonitorsCallbackParams_t*)_lparam;
     displayDataArray_t* displays = params->m_displaysPtr;
 
-    size_t freeSlot = displays->m_size;
-	displayData_t* current = &displays->m_elems[freeSlot];
+    const uint32_t freeSlot = displays->m_size;
+	displayData_t* current = &displays->m_data[freeSlot];
 
     // Get common display data
     {
-        strncpy(current->m_name, info.szDevice, 31);
-        current->m_name[31] = 0;
+        const uint32_t string32Capacity = string32CapacityGet();
+        strncpy(current->m_name.m_data, info.szDevice, string32Capacity);
+        current->m_name.m_data[string32Capacity - 1] = 0;
         current->m_index = freeSlot;
         current->m_monitor = _monitor;
         current->m_primary = (info.dwFlags & MONITORINFOF_PRIMARY) != 0;
@@ -82,7 +99,7 @@ BOOL CALLBACK EnumerationCallback(HMONITOR _monitor, HDC _hdcUnused, LPRECT _rec
         current->m_width = info.rcMonitor.right - info.rcMonitor.left;
         current->m_height = info.rcMonitor.bottom - info.rcMonitor.top;
 
-        HDC hdc = CreateDCA(NULL, current->m_name, NULL, NULL);
+        HDC hdc = CreateDCA(NULL, current->m_name.m_data, NULL, NULL);
         current->m_ppi = GetDeviceCaps(hdc, LOGPIXELSX);
         DeleteDC(hdc);
     }
@@ -105,7 +122,7 @@ BOOL CALLBACK EnumerationCallback(HMONITOR _monitor, HDC _hdcUnused, LPRECT _rec
         memset(&devmodeA, 0, sizeof(DEVMODEA));
 	    
         devmodeA.dmSize = sizeof(DEVMODEA);
-	    EnumDisplaySettingsA(current->m_name, ENUM_CURRENT_SETTINGS, &devmodeA);
+	    EnumDisplaySettingsA(current->m_name.m_data, ENUM_CURRENT_SETTINGS, &devmodeA);
 	    current->m_frequency = devmodeA.dmDisplayFrequency;
 	    current->m_bpp = devmodeA.dmBitsPerPel;
     }
@@ -114,7 +131,7 @@ BOOL CALLBACK EnumerationCallback(HMONITOR _monitor, HDC _hdcUnused, LPRECT _rec
 	return TRUE;
 }
 
-void displayInit(displayDataArray_t* _displays) 
+void displayInit(displayDataArray_t* _displays)
 {
 	HMODULE shcore = LoadLibraryA("Shcore.dll");
 	getDpiForMonitor_t getDpiForMonitorPtr = NULL;

@@ -1,25 +1,31 @@
 #include <stdio.h>
-
 #include "engine/backends/system/windows/system.c"
-#include "engine/backends/system/windows/display.c"
-#include "engine/backends/system/windows/window.c"
 
 // NOTE(Victor): build with mingw on windows:
 // gcc src/main.c -g -lgdi32 && ./cv2pdb64.exe a.exe
 // devenv a.exe (to open visual studio debugger)
 
-int kickstart(int argc, char **argv)
+// NOTE(Victor): build with zig cc (clang) compiler on windows:
+// zig cc src/main.c -g -lgdi32
+// devenv a.exe (to open visual studio debugger)
+
+void appUpdate(app_t* _app)
+{
+	int test = 0;
+}
+
+void appStop(app_t* _app)
+{
+    int test = 0;
+}
+
+int appKickstart(int argc, char **argv)
 {
     printf("Inside kickstart 2\n");
 
-    displayDataArray_t displays;
-    displayInit(&displays);
-
-    windowOptions_t firstWindowOptions;
-	windowOptionsSetDefaults(&firstWindowOptions);
-
     static app_t app;
-    const int firstWindow = appInit(&app, "MultiWindow", 1024, 768, &firstWindowOptions, NULL);
-
+    appInit(&app, "MultiWindow", 1024, 768);
+    appStart(&app);
+    
     return 0;
 }

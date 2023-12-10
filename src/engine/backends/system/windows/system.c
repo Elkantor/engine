@@ -4,33 +4,39 @@
 #include <DbgHelp.h>
 #include <stddef.h>
 #include <string.h>
+#include <stdint.h>
+
+#include "window.c"
+#include "display.c"
 #include "../../../window.c"
+#include "../../../system.c"
 
 typedef struct
 {
-    int m_elems[256];
-    size_t m_size;
+    int m_data[256];
+    uint32_t m_size;
 } keysPressedArray_t;
 
-size_t keysPressedArrayCapacityGet(void)
+uint32_t keysPressedArrayCapacityGet(void)
 {
     return offsetof(keysPressedArray_t, m_size) / sizeof(int);
 }
 
-typedef struct
+typedef struct app
 {
 	char m_name[256];
+	windowArray_t m_windows;
+	displayDataArray_t m_displays;
     keysPressedArray_t m_keysPressed;
 	LARGE_INTEGER m_frequency;
 	LARGE_INTEGER m_startCount;
+	bool m_running;
 } app_t;
 
-size_t appNameCapacityGet(void)
+uint32_t appNameCapacityGet(void)
 {
 	return offsetof(app_t, m_keysPressed) / sizeof(char);
 }
-
-int kickstart(int _argc, char** _argv);
 
 typedef BOOL(__stdcall *miniDumpWriteFunc)(IN HANDLE hProcess, IN DWORD ProcessId, IN HANDLE hFile, IN MINIDUMP_TYPE DumpType,
 	IN CONST PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam,
@@ -66,11 +72,43 @@ void crashHandlerInit(void)
 
 void appNameSet(app_t* _app, const char* _name)
 {
-	const size_t capacity = appNameCapacityGet();
+	const uint32_t capacity = appNameCapacityGet();
 	strncpy(_app->m_name, _name, capacity);
 }
 
-int appInit(app_t* _app, const char* _name, int _width, int _height, windowOptions_t* _winOptions, framebufferOptions_t* _frameBufferOptions)
+bool internalMessagesHandle(void)
+{
+	MSG message;
+
+	while (PeekMessage(&message, 0, 0, 0, PM_REMOVE))
+	{
+		TranslateMessage(&message);
+		DispatchMessage(&message);
+	}
+
+	return true;
+}
+
+bool internalFrame(app_t* _app)
+{
+	appUpdate(_app);
+	internalMessagesHandle();
+
+	return _app->m_running;
+}
+
+void appStart(app_t* _app)
+{
+	_app->m_running = true;
+
+	while (internalFrame(_app)) 
+	{
+	}
+
+	appStop(_app);
+}
+
+void appInit(app_t* _app, const char* _name, const int _width, const int _height)
 {
 	crashHandlerInit();
 
@@ -81,12 +119,35 @@ int appInit(app_t* _app, const char* _name, int _width, int _height, windowOptio
 
 	appNameSet(_app, _name);
 
-	return 0;
+	// Init the displays
+	{
+		_app->m_displays.m_size = 0;
+    	displayInit(&_app->m_displays);
+	}
+
+	windowData_t* windowData = &_app->m_windows.m_data[_app->m_windows.m_size];
+
+	// Init the windows
+	{
+		windowDataDefaultSet(windowData);
+	
+		windowData->m_width = _width;
+		windowData->m_height = _height;
+		windowData->m_title = _name;
+		windowData->m_displayIndex = displayPrimaryGet(&_app->m_displays);
+	}
+
+	windowCreate(&_app->m_displays, windowData, false);
+	_app->m_windows.m_size += 1;
+
+	//graphicsInternalWindowInit()
+
+	windowShow(windowData);
 }
 
 int WINAPI WinMain(HINSTANCE _hInstance, HINSTANCE _hPrevInstance, LPSTR _lpCmdLine, int _nCmdShow)
 {
-	const int ret = kickstart(__argc, __argv);
+	const int ret = appKickstart(__argc, __argv);
 	
 	if (ret != 0)
     {
