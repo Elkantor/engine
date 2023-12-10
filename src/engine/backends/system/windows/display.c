@@ -160,7 +160,7 @@ void displayRestore(displayDataArray_t* _displays)
 
         if (current->m_modeChanged)
         {
-            // NOTE(Victor): Getting back to default, see https://learn.microsoft.com/fr-fr/windows/win32/api/winuser/nf-winuser-changedisplaysettingsa
+            // NOTE(Victor): Getting back to default by passing NULL and 0, see https://learn.microsoft.com/fr-fr/windows/win32/api/winuser/nf-winuser-changedisplaysettingsa
             ChangeDisplaySettingsA(NULL, 0);
         }
     }
