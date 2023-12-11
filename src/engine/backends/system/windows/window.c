@@ -68,6 +68,8 @@ LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LP
 			if (appPtr->m_windows.m_size == 0)
 			{
 				appStop(appPtr);
+				const wchar_t* windowClassName = L"Window";
+				UnregisterClassW(windowClassName, GetModuleHandle(NULL));
 			}
 			
 			return 0;
