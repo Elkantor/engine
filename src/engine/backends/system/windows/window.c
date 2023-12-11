@@ -8,25 +8,21 @@
 #include <windef.h>
 #include <DbgHelp.h>
 
+#include "../../../window.c"
 #include "../../../utils/recti32_t.c"
 #include "../../../system.c"
-#include "../../../window.c"
-#include "display.c"
-#include "system.c"
 
 uint32_t windowIndexGet(void* _handle)
 {
 	for (uint32_t i = 0; i < appPtr->m_windows.m_size; ++i)
 	{
-		windowData_t* current = &appPtr->m_windows.m_data[i];
+		const windowData_t* current = &appPtr->m_windows.m_data[i];
 
 		if (current->m_handle == _handle)
 		{
 			return i;
 		}
 	}
-
-	return UINT32_MAX;
 }
 
 void windowDestroy(void* _handle)
@@ -75,16 +71,19 @@ LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LP
 		}
 		case WM_SIZE:
 		{
-			const uint32_t windowIndex = windowIndexGet(_hWnd);
-			windowData_t* window = &appPtr->m_windows.m_data[windowIndex];
-			const int width = LOWORD(_lParam);
-			const int height = HIWORD(_lParam);
+			if (appPtr->m_windows.m_size > 0)
+			{
+				const uint32_t windowIndex = windowIndexGet(_hWnd);
+				windowData_t* window = &appPtr->m_windows.m_data[windowIndex];
+				const int width = LOWORD(_lParam);
+				const int height = HIWORD(_lParam);
 
-			window->m_width = width;
-			window->m_height = height;
+				window->m_width = width;
+				window->m_height = height;
 
-			graphicsWindowResize(window, width, height);
-			windowResize(window, width, height);
+				graphicsWindowResize(window, width, height);
+				windowResize(window, width, height);
+			}
 			break;
 		}
 	}

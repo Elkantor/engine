@@ -8,8 +8,8 @@
 #include "window.c"
 #include "display.c"
 #include "../../../window.c"
-#include "../../../system.c"
 #include "../../../graphics.c"
+#include "../../../system.c"
 
 typedef BOOL(__stdcall *miniDumpWriteFunc)(IN HANDLE hProcess, IN DWORD ProcessId, IN HANDLE hFile, IN MINIDUMP_TYPE DumpType,
 	IN CONST PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam,
@@ -120,7 +120,7 @@ void appInit(app_t* _app, const char* _name, const int _width, const int _height
 	windowCreate(&_app->m_displays, windowData, false);
 	_app->m_windows.m_size += 1;
 
-	graphicsWindowInit();
+	graphicsWindowInit(windowData);
 
 	windowShow(windowData);
 }

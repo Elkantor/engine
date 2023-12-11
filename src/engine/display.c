@@ -43,7 +43,6 @@ uint32_t displaysDataArrayCapacityGet(void)
     return offsetof(displayDataArray_t, m_size) / sizeof(displayData_t);
 }
 
-uint32_t displaysDataArrayCapacityGet(void);
 uint32_t displayPrimaryGet(displayDataArray_t* _displays);
 void displayInit(displayDataArray_t* _displays);
 void displayRestore(displayDataArray_t* _displays);

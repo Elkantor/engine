@@ -5,6 +5,7 @@
 #include <stddef.h>
 
 #include "display.c"
+#include "graphics.c"
 
 typedef enum
 {
@@ -42,9 +43,10 @@ void framebufferOptionsDefaultSet(framebufferOptions_t* _frame)
 	_frame->m_samplesPerPixel = 1;
 }
 
-typedef struct 
+typedef struct windowData
 {
 	framebufferOptions_t m_frameBufferOptions;
+	graphicsInternal_t m_graphicsWindow;
 	void* m_handle;
 	const char* m_title;
 	int m_x;
@@ -87,7 +89,6 @@ void windowCreate(displayDataArray_t* _displays, windowData_t* _windowData, cons
 void windowShow(windowData_t* _window);
 void windowHide(windowData_t* _window);
 void windowDestroy(void* _handle);
-uint32_t windowIndexGet(void* _handle);
 
 // User implemenatations
 void windowResize(windowData_t* _window, const int _width, const int _height);
