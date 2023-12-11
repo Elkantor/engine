@@ -60,7 +60,6 @@ LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LP
 		{
 			break;
 		}
-
 		case WM_CLOSE:
 		{
 			windowDestroy(_hWnd);
@@ -73,6 +72,20 @@ LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LP
 			}
 			
 			return 0;
+		}
+		case WM_SIZE:
+		{
+			const uint32_t windowIndex = windowIndexGet(_hWnd);
+			windowData_t* window = &appPtr->m_windows.m_data[windowIndex];
+			const int width = LOWORD(_lParam);
+			const int height = HIWORD(_lParam);
+
+			window->m_width = width;
+			window->m_height = height;
+
+			graphicsWindowResize(window, width, height);
+			windowResize(window, width, height);
+			break;
 		}
 	}
 

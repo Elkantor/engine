@@ -2,6 +2,7 @@
 
 #include "engine/backends/graphics/opengl/graphics.c"
 #include "engine/backends/system/windows/system.c"
+#include "engine/window.c"
 
 // NOTE(Victor): build with mingw on windows:
 // gcc src/main.c -g -lgdi32 && ./cv2pdb64.exe a.exe
@@ -10,6 +11,10 @@
 // NOTE(Victor): build with zig cc (clang) compiler on windows:
 // zig cc src/main.c -g -lgdi32
 // devenv a.exe (to open visual studio debugger)
+
+void windowResize(windowData_t* _window, const int _width, const int _height)
+{
+}
 
 void appUpdate(app_t* _app)
 {

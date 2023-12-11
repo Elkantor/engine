@@ -88,3 +88,6 @@ void windowShow(windowData_t* _window);
 void windowHide(windowData_t* _window);
 void windowDestroy(void* _handle);
 uint32_t windowIndexGet(void* _handle);
+
+// User implemenatations
+void windowResize(windowData_t* _window, const int _width, const int _height);
