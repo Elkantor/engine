@@ -320,3 +320,9 @@ void windowShow(windowData_t* _window)
 	ShowWindow((HWND) _window->m_handle, SW_SHOWDEFAULT);
 	UpdateWindow((HWND) _window->m_handle);
 }
+
+void windowHide(windowData_t* _window)
+{
+	ShowWindow(_window->m_handle, SW_HIDE);
+	UpdateWindow(_window->m_handle);
+}

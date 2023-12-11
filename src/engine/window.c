@@ -85,5 +85,6 @@ uint32_t windowArrayCapacityGet(void)
 
 void windowCreate(displayDataArray_t* _displays, windowData_t* _windowData, const bool _appInitialized);
 void windowShow(windowData_t* _window);
+void windowHide(windowData_t* _window);
 void windowDestroy(void* _handle);
 uint32_t windowIndexGet(void* _handle);
