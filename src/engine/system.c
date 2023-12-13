@@ -4,9 +4,6 @@
 #include <stdint.h>
 #include <stdint.h>
 
-typedef struct app app_t;
-app_t* appPtr = 0;
-
 #include "window.c"
 #include "display.c"
 
@@ -24,7 +21,6 @@ uint32_t keysPressedArrayCapacityGet(void)
 typedef struct app
 {
 	char m_name[256];
-	windowArray_t m_windows;
 	displayDataArray_t m_displays;
     keysPressedArray_t m_keysPressed;
 	int64_t m_frequency;
@@ -42,4 +38,4 @@ int appKickstart(int _argc, char** _argv);
 void appUpdate(app_t* _app);
 void appStart(app_t* _app);
 void appStop(app_t* _app);
-void appInit(app_t* _app, const char* _name, const int _width, const int _height);
+void appInit(app_t* _app, const char* _name);

@@ -12,22 +12,44 @@
 #include "../../../utils/recti32_t.c"
 #include "../../../system.c"
 
-uint32_t windowIndexGet(void* _handle)
+void windowInit(windowArray_t* _windows, const uint32_t _index, const int _width, const int _height, const char* _name)
 {
-	for (uint32_t i = 0; i < appPtr->m_windows.m_size; ++i)
+	windowData_t* windowData = &_windows->m_data[_windows->m_size];
+
+	// Init the windows
 	{
-		const windowData_t* current = &appPtr->m_windows.m_data[i];
+		windowDataDefaultSet(windowData);
+	
+		windowData->m_width = _width;
+		windowData->m_height = _height;
+		windowData->m_title = _name;
+		windowData->m_displayIndex = displayPrimaryGet(&_windows->m_app->m_displays);
+	}
+
+	windowCreate(&_windows->m_app->m_displays, windowData, false);
+	_windows->m_size += 1;
+	
+	windowShow(windowData);
+}
+
+uint32_t windowIndexGet(windowArray_t* _windows, void* _handle)
+{
+	for (uint32_t i = 0; i < _windows->m_size; ++i)
+	{
+		const windowData_t* current = &_windows->m_data[i];
 
 		if (current->m_handle == _handle)
 		{
 			return i;
 		}
 	}
+
+	return UINT32_MAX;
 }
 
-void windowDestroy(void* _handle)
+void windowDestroy(windowArray_t* _windows, void* _handle)
 {
-	const uint32_t windowIndex = windowIndexGet(_handle); 
+	const uint32_t windowIndex = windowIndexGet(_windows, _handle); 
 
 	if (windowIndex == UINT32_MAX)
 	{
@@ -35,8 +57,8 @@ void windowDestroy(void* _handle)
 	}
 
 	DestroyWindow(_handle);
-	memset(&appPtr->m_windows.m_data[windowIndex], 0, sizeof(appPtr->m_windows.m_data[0]));
-	appPtr->m_windows.m_data[windowIndex] = appPtr->m_windows.m_data[--appPtr->m_windows.m_size];
+	memset(&_windows->m_data[windowIndex], 0, sizeof(_windows->m_data[0]));
+	_windows->m_data[windowIndex] = _windows->m_data[--_windows->m_size];
 }
 
 LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LPARAM _lParam)
@@ -58,11 +80,11 @@ LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LP
 		}
 		case WM_CLOSE:
 		{
-			windowDestroy(_hWnd);
+			windowDestroy(k_windows, _hWnd);
 
-			if (appPtr->m_windows.m_size == 0)
+			if (k_windows->m_size == 0)
 			{
-				appStop(appPtr);
+				appStop(k_windows->m_app);
 				const wchar_t* windowClassName = L"Window";
 				UnregisterClassW(windowClassName, GetModuleHandle(NULL));
 			}
@@ -71,17 +93,16 @@ LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LP
 		}
 		case WM_SIZE:
 		{
-			if (appPtr->m_windows.m_size > 0)
+			if (k_windows->m_size > 0)
 			{
-				const uint32_t windowIndex = windowIndexGet(_hWnd);
-				windowData_t* window = &appPtr->m_windows.m_data[windowIndex];
+				const uint32_t windowIndex = windowIndexGet(k_windows, _hWnd);
+				windowData_t* window = &k_windows->m_data[windowIndex];
 				const int width = LOWORD(_lParam);
 				const int height = HIWORD(_lParam);
 
 				window->m_width = width;
 				window->m_height = height;
 
-				graphicsWindowResize(window, width, height);
 				windowResize(window, width, height);
 			}
 			break;

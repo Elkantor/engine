@@ -1,5 +1,6 @@
 #include <stdio.h>
 
+#include "engine/utils/memory/memoryStack.c"
 #include "engine/backends/windowsOpengl.c"
 
 // NOTE(Victor): build with mingw on windows:
@@ -13,6 +14,7 @@
 void windowResize(windowData_t* _window, const int _width, const int _height)
 {
     int test = 0;
+    printf("resized\n");
 }
 
 void appUpdate(app_t* _app)
@@ -24,13 +26,16 @@ int appKickstart(int argc, char **argv)
     printf("Inside kickstart 2\n");
 
     static app_t app;
-    appInit(&app, "MultiWindow", 1024, 768);
+    appInit(&app, "My App");
 
-    // Init graphic pipeline
-    // {
-    //     pipeline_t pipeline;
-    //     pipelineInit
-    // }
+    static windowArray_t windows;
+    windowArrayInit(&app, &windows);
+    
+    static graphicsArray_t graphics;
+    graphicsArrayInit(&graphics);
+
+    windowInit(&windows, 0, 1024, 768, "First Window");
+    windowGraphicsInit(&windows, 0, &graphics, 0);
 
     appStart(&app);
 

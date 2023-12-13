@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "system.c"
 #include "display.c"
 #include "graphics.c"
 
@@ -46,7 +47,6 @@ void framebufferOptionsDefaultSet(framebufferOptions_t* _frame)
 typedef struct windowData
 {
 	framebufferOptions_t m_frameBufferOptions;
-	graphicsInternal_t m_graphicsWindow;
 	void* m_handle;
 	const char* m_title;
 	int m_x;
@@ -57,6 +57,8 @@ typedef struct windowData
 	int m_windowFeatures;
 	windowMode_t m_mode;
 	bool m_visible;
+	uint32_t m_graphicIndex;
+
 } windowData_t;
 
 void windowDataDefaultSet(windowData_t* _win)
@@ -72,12 +74,15 @@ void windowDataDefaultSet(windowData_t* _win)
 	_win->m_windowFeatures = WINDOW_FEATURE_RESIZEABLE | WINDOW_FEATURE_MINIMIZABLE | WINDOW_FEATURE_MAXIMIZABLE;
 	_win->m_mode = WINDOW_MODE_WINDOW;
 	_win->m_visible = true;
+	_win->m_graphicIndex = UINT32_MAX;
 }
 
 typedef struct
 {
     windowData_t m_data[8]; // 8 windows max for an app
     uint32_t m_size;
+
+	app_t* m_app; // Windows are attached to an app, without the app, windows make no sense
 } windowArray_t;
 
 uint32_t windowArrayCapacityGet(void)
@@ -85,10 +90,23 @@ uint32_t windowArrayCapacityGet(void)
     return offsetof(windowArray_t, m_size) / sizeof(windowData_t);
 }
 
+static windowArray_t* k_windows = NULL;
+
+void windowArrayInit(app_t* _app, windowArray_t* _windows)
+{
+	_windows->m_app = _app;
+	k_windows = _windows;
+}
+
+void windowInit(windowArray_t* _windows, const uint32_t _index, const int _width, const int _height, const char* _name);
 void windowCreate(displayDataArray_t* _displays, windowData_t* _windowData, const bool _appInitialized);
 void windowShow(windowData_t* _window);
 void windowHide(windowData_t* _window);
-void windowDestroy(void* _handle);
+void windowDestroy(windowArray_t* _windows, void* _handle);
+uint32_t windowIndexGet(windowArray_t* _windows, void* _handle);
+
+// Graphics implementations
+void windowGraphicsInit(windowArray_t* _windows, const uint32_t _windowIndex, graphicsArray_t* _graphics, const uint32_t _graphicIndex);
 
 // User implemenatations
 void windowResize(windowData_t* _window, const int _width, const int _height);

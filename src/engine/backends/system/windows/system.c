@@ -73,6 +73,8 @@ bool internalFrame(app_t* _app)
 void appStop(app_t* _app)
 {
     displayRestore(&_app->m_displays);
+	
+	_app->m_running = false;
 }
 
 void appStart(app_t* _app)
@@ -86,13 +88,11 @@ void appStart(app_t* _app)
 	appStop(_app);
 }
 
-void appInit(app_t* _app, const char* _name, const int _width, const int _height)
+void appInit(app_t* _app, const char* _name)
 {
 	crashHandlerInit();
 
 	memset(_app, 0, sizeof(*_app));
-
-	appPtr = _app;
 
 	QueryPerformanceCounter((LARGE_INTEGER*) &_app->m_startCount);
 	QueryPerformanceFrequency((LARGE_INTEGER*)&_app->m_frequency);
@@ -104,25 +104,6 @@ void appInit(app_t* _app, const char* _name, const int _width, const int _height
 		_app->m_displays.m_size = 0;
     	displayInit(&_app->m_displays);
 	}
-
-	windowData_t* windowData = &_app->m_windows.m_data[_app->m_windows.m_size];
-
-	// Init the windows
-	{
-		windowDataDefaultSet(windowData);
-	
-		windowData->m_width = _width;
-		windowData->m_height = _height;
-		windowData->m_title = _name;
-		windowData->m_displayIndex = displayPrimaryGet(&_app->m_displays);
-	}
-
-	windowCreate(&_app->m_displays, windowData, false);
-	_app->m_windows.m_size += 1;
-
-	graphicsWindowInit(windowData);
-
-	windowShow(windowData);
 }
 
 int WINAPI WinMain(HINSTANCE _hInstance, HINSTANCE _hPrevInstance, LPSTR _lpCmdLine, int _nCmdShow)

@@ -1,13 +1,13 @@
 #pragma once
 
 #include <stdbool.h>
-#include <stdint.h>
+#include <stddef.h>
 
-typedef struct windowData windowData_t;
+typedef struct graphicsArray graphicsArray_t;
 
-typedef struct graphicsInternal graphicsInternal_t;
-typedef struct graphicsInternalArray graphicsInternalArray_t;
+static graphicsArray_t* k_graphicsArray = NULL;
 
-uint32_t graphicsInternalArrayCapacityGet(void);
-void graphicsWindowInit(windowData_t* _window);
-void graphicsWindowResize(windowData_t* _window, const int _width, const int _height);
+void graphicsArrayInit(graphicsArray_t* _graphicsArray)
+{
+    k_graphicsArray = _graphicsArray;
+}
