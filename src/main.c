@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 #include "engine/utils/memory/memoryStack.c"
-#include "engine/backends/windowsOpengl.c"
+#include "appconfig.c"
 
 // NOTE(Victor): build with mingw on windows:
 // gcc src/main.c -g -lgdi32 -lopengl32 -lglu32 && ./cv2pdb64.exe a.exe
@@ -13,7 +13,6 @@
 
 void windowResize(windowData_t* _window, const int _width, const int _height)
 {
-    int test = 0;
     printf("resized\n");
 }
 
