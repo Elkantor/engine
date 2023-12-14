@@ -6,6 +6,7 @@
 #include <wingdi.h>
 #include "../../openGL/glWrapper.c"
 #include "../../../../window.c"
+#include "../../../../vertex.c"
 #include "graphics.c"
 
 void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex, graphicsArray_t* _graphics, const uint32_t _graphicIndex, const int _depthBufferBits, const int _stencilBufferBits)
@@ -96,6 +97,12 @@ void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex,
         assert(glDebugErrorCheck() == false);
 
         renderTargetInit(&graphic->m_renderTarget, window->m_width, window->m_height, _depthBufferBits, _stencilBufferBits, 1, RENDER_TARGET_FORMAT_32BIT);
+    
+        wglMakeCurrent(hdc, graphic->m_glContext);
+        assert(glDebugErrorCheck() == false);
+
+        vertexArray_t vertexArray;
+        vertexArrayInit(&vertexArray);
     }
 
     wglMakeCurrent(hdc, graphic->m_glContext);
