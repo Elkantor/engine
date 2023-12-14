@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
 
 #include "system.c"
 #include "display.c"
@@ -94,6 +95,13 @@ static windowArray_t* k_windows = NULL;
 
 void windowArrayInit(app_t* _app, windowArray_t* _windows)
 {
+	memset(_windows, 0, sizeof(windowArray_t));
+
+	for (uint32_t i = 0; i < windowArrayCapacityGet(); ++i)
+	{
+		_windows->m_data[i].m_graphicIndex = UINT32_MAX;
+	}
+
 	_windows->m_app = _app;
 	k_windows = _windows;
 }

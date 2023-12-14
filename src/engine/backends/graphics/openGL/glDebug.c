@@ -1,12 +1,10 @@
 #pragma once
 
 #include <stdbool.h>
+#include "glew.c"
 
 typedef unsigned int GLenum;
 #define GL_NO_ERROR 0
-
-GLenum glGetError (void);
-
 
 bool glDebugErrorCheck(void)
 {

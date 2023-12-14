@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <string.h>
 
 typedef struct graphicsArray graphicsArray_t;
 

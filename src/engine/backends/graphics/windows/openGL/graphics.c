@@ -5,6 +5,7 @@
 #include <stddef.h>
 
 #include "../../../../graphics.c"
+#include "renderTarget.c"
 
 typedef struct
 {
@@ -13,7 +14,7 @@ typedef struct
 	int m_depthBufferBits;
 	int m_framebuffer;
 	unsigned m_vertexArray;
-	//struct kinc_g4_render_target renderTarget;
+	renderTargetImpl_t m_renderTarget;
 } graphic_t;
 
 typedef struct graphicsArray
@@ -22,7 +23,7 @@ typedef struct graphicsArray
     uint32_t m_size;
 } graphicsArray_t;
 
-uint32_t graphicsInternalArrayCapacityGet(void)
+uint32_t graphicsArrayCapacityGet(void)
 {
     return offsetof(graphicsArray_t, m_size) / sizeof(graphic_t); 
 }

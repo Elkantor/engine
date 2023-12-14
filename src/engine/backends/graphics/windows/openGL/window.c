@@ -1,18 +1,21 @@
 #pragma once
 
+#include <assert.h>
+#include <stdint.h>
 #include <windows.h>
 #include <wingdi.h>
-#include "../../openGL/glew.c"
 #include "../../openGL/glDebug.c"
-#include "graphics.c"
 #include "../../../../window.c"
+#include "graphics.c"
 
-void internalGLContextInit(HWND _hwnd, graphic_t* _graphicsData, const int _depthBufferBits, const int _stencilBufferBits)
+void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex, graphicsArray_t* _graphics, const uint32_t _graphicIndex, const int _depthBufferBits, const int _stencilBufferBits)
 {
-    _graphicsData->m_depthBufferBits = _depthBufferBits;
+    graphic_t* graphic = &_graphics->m_data[_graphicIndex];
+    graphic->m_depthBufferBits = _depthBufferBits;
 
-    const HDC hdc = GetDC(_hwnd);
-    _graphicsData->m_deviceContext = hdc;
+    windowData_t* window = &_windows->m_data[_windowIndex];
+    const HDC hdc = GetDC(window->m_handle);
+    graphic->m_deviceContext = hdc;
 
     PIXELFORMATDESCRIPTOR pfd = 
     {
@@ -52,6 +55,9 @@ void internalGLContextInit(HWND _hwnd, graphic_t* _graphicsData, const int _dept
 
     glewInit();
 
+    const windowData_t* firstWindow = &_windows->m_data[0];
+    const graphic_t* firstGraphic = &_graphics->m_data[0];
+
     if (wglewIsSupported("WGL_ARB_create_context") == 1)
     {
 		int attributes[] = 
@@ -67,29 +73,50 @@ void internalGLContextInit(HWND _hwnd, graphic_t* _graphicsData, const int _dept
             [8] = 0
         };
 
-         _graphicsData->m_glContext = wglCreateContextAttribsARB(hdc, _graphicsData->m_glContext, attributes);
-     
-        if (glDebugErrorCheck())
-        {
-            // NOTE(Victor): Handle the error
-            return;
-        }
+        graphic->m_glContext = wglCreateContextAttribsARB(hdc, firstGraphic->m_glContext, attributes);
+        assert(glDebugErrorCheck() == false);
 		
         wglMakeCurrent(NULL, NULL);
 		wglDeleteContext(tempGlContext);
-		wglMakeCurrent(hdc, _graphicsData->m_glContext);
 		
-        if (glDebugErrorCheck())
-        {
-            // NOTE(Victor): Handle error
-            return;
-        }
+		wglMakeCurrent(hdc, graphic->m_glContext);
+        assert(glDebugErrorCheck() == false);
+    }
+    else
+    {
+        graphic->m_glContext = tempGlContext;
     }
 
+    const HDC firstWindowHDC = GetDC(firstWindow->m_handle);
+    
+    if (_graphicIndex != 0 && _windowIndex != 0)
+    {
+        wglShareLists(firstGraphic->m_glContext, graphic->m_glContext);
+
+        wglMakeCurrent(firstWindowHDC, firstGraphic->m_glContext);
+        assert(glDebugErrorCheck() == false);
+    }
+
+    wglMakeCurrent(hdc, graphic->m_glContext);
+    assert(glDebugErrorCheck() == false);
+    
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &graphic->m_framebuffer);
+
+	glGenVertexArrays(1, &graphic->m_vertexArray);
+    assert(glDebugErrorCheck() == false);
+
+	wglMakeCurrent(firstWindowHDC, firstGraphic->m_glContext);
+    assert(glDebugErrorCheck() == false);
+    
+	glBindVertexArray(firstGraphic->m_vertexArray);
+	assert(glDebugErrorCheck() == false);
 }
 
 void windowGraphicsInit(windowArray_t* _windows, const uint32_t _windowIndex, graphicsArray_t* _graphics, const uint32_t _graphicIndex)
 {
+    assert(_windows->m_data[_windowIndex].m_graphicIndex != UINT32_MAX);
+    assert(_windows->m_data[_windowIndex].m_handle != NULL);
+    
     windowData_t* window = &_windows->m_data[_windowIndex];
 
     const int depthBits = window->m_frameBufferOptions.m_depthBits;
@@ -97,5 +124,6 @@ void windowGraphicsInit(windowArray_t* _windows, const uint32_t _windowIndex, gr
     const HWND handle = window->m_handle;
     graphic_t* graphic = &_graphics->m_data[_graphicIndex];
 
-    internalGLContextInit(handle, graphic, depthBits, stencilBits);
+    internalGLContextInit(_windows, _windowIndex, _graphics, _graphicIndex, depthBits, stencilBits);
+
 }
