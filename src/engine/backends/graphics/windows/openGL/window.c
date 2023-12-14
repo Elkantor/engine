@@ -1,6 +1,9 @@
 #pragma once
 
 #include <windows.h>
+#include <wingdi.h>
+#include "../../openGL/glew.c"
+#include "../../openGL/glDebug.c"
 #include "graphics.c"
 #include "../../../../window.c"
 
@@ -10,8 +13,6 @@ void internalGLContextInit(HWND _hwnd, graphic_t* _graphicsData, const int _dept
 
     const HDC hdc = GetDC(_hwnd);
     _graphicsData->m_deviceContext = hdc;
-
-    DWORD dwDamageMask;
 
     PIXELFORMATDESCRIPTOR pfd = 
     {
@@ -45,7 +46,46 @@ void internalGLContextInit(HWND _hwnd, graphic_t* _graphicsData, const int _dept
 
     const uint32_t pixelFormat = ChoosePixelFormat(hdc, &pfd);
     SetPixelFormat(hdc, pixelFormat, &pfd);
+
     HGLRC tempGlContext = wglCreateContext(hdc);
+    wglMakeCurrent(hdc, tempGlContext);
+
+    glewInit();
+
+    if (wglewIsSupported("WGL_ARB_create_context") == 1)
+    {
+		int attributes[] = 
+        {
+            [0] = WGL_CONTEXT_MAJOR_VERSION_ARB,
+            [1] = 4,
+            [2] = WGL_CONTEXT_MINOR_VERSION_ARB,
+            [3] = 2,
+            [4] = WGL_CONTEXT_FLAGS_ARB,
+            [5] = WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+            [6] = WGL_CONTEXT_PROFILE_MASK_ARB,
+            [7] = WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+            [8] = 0
+        };
+
+         _graphicsData->m_glContext = wglCreateContextAttribsARB(hdc, _graphicsData->m_glContext, attributes);
+     
+        if (glDebugErrorCheck())
+        {
+            // NOTE(Victor): Handle the error
+            return;
+        }
+		
+        wglMakeCurrent(NULL, NULL);
+		wglDeleteContext(tempGlContext);
+		wglMakeCurrent(hdc, _graphicsData->m_glContext);
+		
+        if (glDebugErrorCheck())
+        {
+            // NOTE(Victor): Handle error
+            return;
+        }
+    }
+
 }
 
 void windowGraphicsInit(windowArray_t* _windows, const uint32_t _windowIndex, graphicsArray_t* _graphics, const uint32_t _graphicIndex)
