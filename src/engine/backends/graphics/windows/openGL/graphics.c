@@ -5,7 +5,7 @@
 #include <stddef.h>
 
 #include "../../../../graphics.c"
-#include "../../openGL/glDebug.c"
+#include "../../openGL/glWrapper.c"
 #include "../../openGL/renderTarget.c"
 
 typedef struct

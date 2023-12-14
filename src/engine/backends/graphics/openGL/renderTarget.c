@@ -2,7 +2,7 @@
 
 #include <stdbool.h>
 #include <assert.h>
-#include "glDebug.c"
+#include "glWrapper.c"
 #include "../../../renderTarget.c"
 
 typedef struct renderTargetImpl

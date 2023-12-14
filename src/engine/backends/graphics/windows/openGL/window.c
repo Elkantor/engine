@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <windows.h>
 #include <wingdi.h>
-#include "../../openGL/glDebug.c"
+#include "../../openGL/glWrapper.c"
 #include "../../../../window.c"
 #include "graphics.c"
 
