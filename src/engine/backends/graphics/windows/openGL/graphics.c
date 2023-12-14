@@ -5,6 +5,7 @@
 #include <stddef.h>
 
 #include "../../../../graphics.c"
+#include "../../openGL/glDebug.c"
 #include "../../openGL/renderTarget.c"
 
 typedef struct
@@ -26,4 +27,9 @@ typedef struct graphicsArray
 uint32_t graphicsArrayCapacityGet(void)
 {
     return offsetof(graphicsArray_t, m_size) / sizeof(graphic_t); 
+}
+
+void internalGraphicsInit(graphicsArray_t* _graphicsArray)
+{
+	glewInit();
 }

@@ -54,8 +54,6 @@ void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex,
     wglMakeCurrent(hdc, tempGlContext);
     assert(glDebugErrorCheck() == false);
 
-    glewInit();
-
     const windowData_t* firstWindow = &_windows->m_data[0];
     const graphic_t* firstGraphic = &_graphics->m_data[0];
 
@@ -98,8 +96,6 @@ void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex,
         assert(glDebugErrorCheck() == false);
 
         renderTargetInit(&graphic->m_renderTarget, window->m_width, window->m_height, _depthBufferBits, _stencilBufferBits, 1, RENDER_TARGET_FORMAT_32BIT);
-        
-    
     }
 
     wglMakeCurrent(hdc, graphic->m_glContext);
@@ -126,8 +122,19 @@ void windowGraphicsInit(windowArray_t* _windows, const uint32_t _windowIndex, gr
 
     const int depthBits = window->m_frameBufferOptions.m_depthBits;
     const int stencilBits = window->m_frameBufferOptions.m_stencilBits;
-    const HWND handle = window->m_handle;
-    graphic_t* graphic = &_graphics->m_data[_graphicIndex];
 
     internalGLContextInit(_windows, _windowIndex, _graphics, _graphicIndex, depthBits, stencilBits);
+
+    if (_windows->m_size == 1)
+    {
+        if (wglSwapIntervalEXT != NULL)
+        {
+            wglSwapIntervalEXT(_windows->m_data[_windowIndex].m_frameBufferOptions.m_verticalSync);
+        }
+    }
+
+    int maxColorAttachments = 8;
+    glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxColorAttachments);
+
+    //const int openGLVersion = glVersionGet();
 }

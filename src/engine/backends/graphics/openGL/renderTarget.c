@@ -107,4 +107,21 @@ void renderTargetInit(renderTargetImpl_t* _renderTarget, const int _width, const
 	//setupDepthStencil(_renderTarget, GL_TEXTURE_2D, _depthBits, _stencilBits, texWidth, texHeight);
 
 
+	if (_format == RENDER_TARGET_FORMAT_16BIT_DEPTH)
+	{
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _renderTarget->m_texture, 0);
+		glDrawBuffer(GL_NONE);
+		glReadBuffer(GL_NONE);
+		assert(glDebugErrorCheck() == false);
+	}
+	else
+	{
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _renderTarget->m_texture, 0);
+		assert(glDebugErrorCheck() == false);
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	assert(glDebugErrorCheck() == false);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	assert(glDebugErrorCheck() == false);
 }
