@@ -103,6 +103,7 @@ void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex,
 
         vertexArray_t vertexArray;
         vertexArrayInit(&vertexArray);
+        vertexArrayAdd(&vertexArray, "pos", VERTEX_DATA_F32_2X);
     }
 
     wglMakeCurrent(hdc, graphic->m_glContext);

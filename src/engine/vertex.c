@@ -45,17 +45,17 @@ typedef enum
 	VERTEX_DATA_U32_3X = 35,
 	VERTEX_DATA_I32_4X = 36,
 	VERTEX_DATA_U32_4X = 37,
-} vertexData_t;
+} vertexDataType_t;
 
 typedef struct
 {
     const char* m_name;
-    vertexData_t m_data;
+    vertexDataType_t m_dataType;
 } vertex_t;
 
 typedef struct
 {
-    vertex_t m_data;
+    vertex_t m_data[16];
     uint32_t m_size;
 
     bool m_instanced;
@@ -69,4 +69,14 @@ uint32_t vertexArrayCapacityGet(void)
 void vertexArrayInit(vertexArray_t* _vertexArray)
 {
     memset(_vertexArray, 0, sizeof(*_vertexArray));
+}
+
+void vertexInit(vertex_t* _vertex, const char* _name, const vertexDataType_t _dataType) {
+	_vertex->m_name = _name;
+	_vertex->m_dataType = _dataType;
+}
+
+void vertexArrayAdd(vertexArray_t* _vertexArray, const char* _name, const vertexDataType_t _dataType)
+{
+	vertexInit(&_vertexArray->m_data[_vertexArray->m_size++], _name, _dataType);
 }
