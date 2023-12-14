@@ -52,6 +52,7 @@ void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex,
 
     HGLRC tempGlContext = wglCreateContext(hdc);
     wglMakeCurrent(hdc, tempGlContext);
+    assert(glDebugErrorCheck() == false);
 
     glewInit();
 
@@ -95,6 +96,10 @@ void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex,
 
         wglMakeCurrent(firstWindowHDC, firstGraphic->m_glContext);
         assert(glDebugErrorCheck() == false);
+
+        renderTargetInit(&graphic->m_renderTarget, window->m_width, window->m_height, _depthBufferBits, _stencilBufferBits, 1, RENDER_TARGET_FORMAT_32BIT);
+        
+    
     }
 
     wglMakeCurrent(hdc, graphic->m_glContext);
@@ -114,7 +119,7 @@ void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex,
 
 void windowGraphicsInit(windowArray_t* _windows, const uint32_t _windowIndex, graphicsArray_t* _graphics, const uint32_t _graphicIndex)
 {
-    assert(_windows->m_data[_windowIndex].m_graphicIndex != UINT32_MAX);
+    assert(_windows->m_data[_windowIndex].m_graphicIndex == UINT32_MAX);
     assert(_windows->m_data[_windowIndex].m_handle != NULL);
     
     windowData_t* window = &_windows->m_data[_windowIndex];
@@ -125,5 +130,4 @@ void windowGraphicsInit(windowArray_t* _windows, const uint32_t _windowIndex, gr
     graphic_t* graphic = &_graphics->m_data[_graphicIndex];
 
     internalGLContextInit(_windows, _windowIndex, _graphics, _graphicIndex, depthBits, stencilBits);
-
 }

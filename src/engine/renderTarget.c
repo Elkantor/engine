@@ -4,6 +4,19 @@
 #include <stddef.h>
 #include <string.h>
 
+typedef struct renderTargetImpl renderTargetImpl_t;
+
+typedef enum
+{
+	RENDER_TARGET_FORMAT_32BIT,
+	RENDER_TARGET_FORMAT_64BIT_FLOAT,
+	RENDER_TARGET_FORMAT_32BIT_RED_FLOAT,
+	RENDER_TARGET_FORMAT_128BIT_FLOAT,
+	RENDER_TARGET_FORMAT_16BIT_DEPTH,
+	RENDER_TARGET_FORMAT_8BIT_RED,
+	RENDER_TARGET_FORMAT_16BIT_RED_FLOAT
+} renderTargetFormat_t;
+
 typedef struct
 {
     int m_width;
@@ -22,3 +35,5 @@ uint32_t renderTargetArrayCapacityGet(void)
 {
     return offsetof(renderTargetArray_t, m_size) / sizeof(renderTarget_t);
 }
+
+void renderTargetInit(renderTargetImpl_t* _renderTarget, const int _width, const int _height, const int _depthBits, const int _stencilBits, const int _samplesPerPixel, const renderTargetFormat_t _format);

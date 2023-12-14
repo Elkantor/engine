@@ -38,6 +38,7 @@
 #elif defined(GLEW_EGL)
 #  include "eglew.h"
 #elif defined(_WIN32)
+   #include <wingdi.h>
 #  include "wglew.h"
 #elif !defined(__ANDROID__) && !defined(__native_client__) && !defined(__HAIKU__) && (!defined(__APPLE__) || defined(GLEW_APPLE_GLX))
 #  include <GL/glxew.h>

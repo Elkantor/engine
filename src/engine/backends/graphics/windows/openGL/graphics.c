@@ -5,7 +5,7 @@
 #include <stddef.h>
 
 #include "../../../../graphics.c"
-#include "renderTarget.c"
+#include "../../openGL/renderTarget.c"
 
 typedef struct
 {
