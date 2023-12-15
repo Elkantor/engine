@@ -49,7 +49,7 @@ typedef enum
 	VERTEX_DATA_U32_4X = 37,
 } vertexDataType_t;
 
-inline uint32_t vertexDataTypeSizeGet(vertexDataType_t _vertexDataType)
+uint32_t vertexDataTypeSizeGet(vertexDataType_t _vertexDataType)
 {
 	const uint32_t vertexDataTypeSizes[] =
 	{

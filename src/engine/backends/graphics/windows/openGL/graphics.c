@@ -5,7 +5,6 @@
 #include <stddef.h>
 
 #include "../../../../graphics.c"
-#include "../../openGL/vertex.c"
 #include "../../openGL/renderTarget.c"
 
 typedef struct
@@ -22,8 +21,6 @@ typedef struct graphicsArray
 {
     graphic_t m_data[8];
     uint32_t m_size;
-
-	vertex
 } graphicsArray_t;
 
 uint32_t graphicsArrayCapacityGet(void)
