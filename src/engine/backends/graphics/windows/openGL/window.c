@@ -9,9 +9,7 @@
 #include "../../../../vertex.c"
 #include "graphics.c"
 
-#include <stdlib.h>
-
-void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex, graphicsArray_t* _graphics, const uint32_t _graphicIndex, const int _depthBufferBits, const int _stencilBufferBits)
+void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex, graphicsArray_t* _graphics, const uint32_t _graphicIndex, const int _depthBufferBits, const int _stencilBufferBits, vertexBuffer_t* _vertexBuffer)
 {
     graphic_t* graphic = &_graphics->m_data[_graphicIndex];
     graphic->m_depthBufferBits = _depthBufferBits;
@@ -58,9 +56,9 @@ void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex,
     assert(glDebugErrorCheck() == false);
 
 	// NOTE(Victor): Glew is initialized if whatever gl function ptr is not null anymore
-	const bool glewInitialized = (glGenVertexArrays != NULL);
+	const bool openGLInitialized = (glGenVertexArrays != NULL);
 
-	if (glewInitialized == false)
+	if (openGLInitialized == false)
 	{
 		glewInit();
 	}
@@ -99,7 +97,7 @@ void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex,
 
     const HDC firstWindowHDC = GetDC(firstWindow->m_handle);
     
-    if (_graphicIndex != 0 && _windowIndex != 0)
+    if (_windowIndex != 0)
     {
         wglShareLists(firstGraphic->m_glContext, graphic->m_glContext);
 
@@ -108,15 +106,19 @@ void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex,
 
         renderTargetInit(&graphic->m_renderTarget, window->m_width, window->m_height, _depthBufferBits, _stencilBufferBits, 1, RENDER_TARGET_FORMAT_32BIT);
     
-        wglMakeCurrent(hdc, graphic->m_glContext);
-        assert(glDebugErrorCheck() == false);
+        if (openGLInitialized == false)
+        {
+            wglMakeCurrent(hdc, graphic->m_glContext);
+            assert(glDebugErrorCheck() == false);
 
-        vertexArray_t vertexArray;
-        vertexArrayInit(&vertexArray);
-        vertexArrayAdd(&vertexArray, "pos", VERTEX_DATA_F32_2X);
+            vertexArray_t vertexArray;
+            vertexArrayInit(&vertexArray);
+            vertexArrayAdd(&vertexArray, "pos", VERTEX_DATA_F32_2X);
 
-        // TODO(Victor): finish to create the default vertex and fragment shader for the window
-        //vertexBufferInit(&windowVertexBuffer, 4, &vertexArray, USAGE_STATIC, 0);
+            // TODO(Victor): finish to create the default vertex and fragment shader for the window
+            vertexBufferInit(_vertexBuffer, 4, &vertexArray, 0);
+        }
+
     }
 
     wglMakeCurrent(hdc, graphic->m_glContext);
@@ -135,7 +137,7 @@ void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex,
 	assert(glDebugErrorCheck() == false);
 }
 
-void windowGraphicsInit(windowArray_t* _windows, const uint32_t _windowIndex, graphicsArray_t* _graphics, const uint32_t _graphicIndex)
+void windowGraphicsInit(windowArray_t* _windows, const uint32_t _windowIndex, graphicsArray_t* _graphics, const uint32_t _graphicIndex, vertexBuffer_t* _vertexBuffer)
 {
     assert(_windows->m_data[_windowIndex].m_graphicIndex == UINT32_MAX);
     assert(_windows->m_data[_windowIndex].m_handle != NULL);
@@ -145,7 +147,7 @@ void windowGraphicsInit(windowArray_t* _windows, const uint32_t _windowIndex, gr
     const int depthBits = window->m_frameBufferOptions.m_depthBits;
     const int stencilBits = window->m_frameBufferOptions.m_stencilBits;
 
-    internalGLContextInit(_windows, _windowIndex, _graphics, _graphicIndex, depthBits, stencilBits);
+    internalGLContextInit(_windows, _windowIndex, _graphics, _graphicIndex, depthBits, stencilBits, _vertexBuffer);
 
     if (_windows->m_size == 1)
     {
@@ -157,6 +159,4 @@ void windowGraphicsInit(windowArray_t* _windows, const uint32_t _windowIndex, gr
 
     int maxColorAttachments = 8;
     glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxColorAttachments);
-
-    //const int openGLVersion = glVersionGet();
 }

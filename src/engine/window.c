@@ -7,6 +7,7 @@
 
 #include "system.c"
 #include "display.c"
+#include "vertex.c"
 #include "graphics.c"
 
 typedef enum
@@ -114,7 +115,7 @@ void windowDestroy(windowArray_t* _windows, void* _handle);
 uint32_t windowIndexGet(windowArray_t* _windows, void* _handle);
 
 // Graphics implementations
-void windowGraphicsInit(windowArray_t* _windows, const uint32_t _windowIndex, graphicsArray_t* _graphics, const uint32_t _graphicIndex);
+void windowGraphicsInit(windowArray_t* _windows, const uint32_t _windowIndex, graphicsArray_t* _graphics, const uint32_t _graphicIndex, vertexBuffer_t* _vertexBuffer);
 
 // User implemenatations
 void windowResize(windowData_t* _window, const int _width, const int _height);
