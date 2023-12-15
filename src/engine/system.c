@@ -39,3 +39,5 @@ void appUpdate(app_t* _app);
 void appStart(app_t* _app);
 void appStop(app_t* _app);
 void appInit(app_t* _app, const char* _name);
+
+uint64_t appStackSizeGet(void);

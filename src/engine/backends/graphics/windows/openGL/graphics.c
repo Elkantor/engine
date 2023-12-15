@@ -28,8 +28,3 @@ uint32_t graphicsArrayCapacityGet(void)
 {
     return offsetof(graphicsArray_t, m_size) / sizeof(graphic_t); 
 }
-
-void internalGraphicsInit(graphicsArray_t* _graphicsArray)
-{
-	glewInit();
-}

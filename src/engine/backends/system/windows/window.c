@@ -74,6 +74,10 @@ LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LP
 		{
 			break;
 		}
+		case WM_CREATE:
+		{
+			break;
+		}
 		case /*WM_DPICHANGED*/ 0x02E0: 
 		{
 			break;

@@ -30,13 +30,16 @@ int appKickstart(int argc, char **argv)
     static windowArray_t windows;
     windowArrayInit(&app, &windows);
     
-    static graphicsArray_t graphics;
-    graphicsArrayInit(&graphics);
+	static graphicsArray_t graphics;
+	graphicsArrayInit(&graphics);
 
     windowInit(&windows, 0, 1024, 768, "First Window");
+
     windowGraphicsInit(&windows, 0, &graphics, 0);
 
+    const uint64_t stackSize = appStackSizeGet();
     appStart(&app);
+
 
     return 0;
 }

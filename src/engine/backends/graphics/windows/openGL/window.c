@@ -9,6 +9,8 @@
 #include "../../../../vertex.c"
 #include "graphics.c"
 
+#include <stdlib.h>
+
 void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex, graphicsArray_t* _graphics, const uint32_t _graphicIndex, const int _depthBufferBits, const int _stencilBufferBits)
 {
     graphic_t* graphic = &_graphics->m_data[_graphicIndex];
@@ -54,6 +56,14 @@ void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex,
     HGLRC tempGlContext = wglCreateContext(hdc);
     wglMakeCurrent(hdc, tempGlContext);
     assert(glDebugErrorCheck() == false);
+
+	// NOTE(Victor): Glew is initialized if whatever gl function ptr is not null anymore
+	const bool glewInitialized = (glGenVertexArrays != NULL);
+
+	if (glewInitialized == false)
+	{
+		glewInit();
+	}
 
     const windowData_t* firstWindow = &_windows->m_data[0];
     const graphic_t* firstGraphic = &_graphics->m_data[0];
@@ -113,6 +123,7 @@ void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex,
     assert(glDebugErrorCheck() == false);
     
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &graphic->m_framebuffer);
+    assert(glDebugErrorCheck() == false);
 
 	glGenVertexArrays(1, &graphic->m_vertexArray);
     assert(glDebugErrorCheck() == false);

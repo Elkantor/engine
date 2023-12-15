@@ -123,6 +123,7 @@ void renderTargetInit(renderTargetImpl_t* _renderTarget, const int _width, const
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	assert(glDebugErrorCheck() == false);
+	
 	glBindTexture(GL_TEXTURE_2D, 0);
 	assert(glDebugErrorCheck() == false);
 }

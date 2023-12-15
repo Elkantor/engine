@@ -106,6 +106,15 @@ void appInit(app_t* _app, const char* _name)
 	}
 }
 
+uint64_t appStackSizeGet()
+{
+	uint64_t low, high;
+	GetCurrentThreadStackLimits(&low, &high);
+	const uint64_t remaining = (uint64_t)(&low) - low;
+
+	return remaining;
+}
+
 int WINAPI WinMain(HINSTANCE _hInstance, HINSTANCE _hPrevInstance, LPSTR _lpCmdLine, int _nCmdShow)
 {
 	const int ret = appKickstart(__argc, __argv);
