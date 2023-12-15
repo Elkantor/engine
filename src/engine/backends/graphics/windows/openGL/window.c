@@ -104,6 +104,9 @@ void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex,
         vertexArray_t vertexArray;
         vertexArrayInit(&vertexArray);
         vertexArrayAdd(&vertexArray, "pos", VERTEX_DATA_F32_2X);
+
+        // TODO(Victor): finish to create the default vertex and fragment shader for the window
+        //vertexBufferInit(&windowVertexBuffer, 4, &vertexArray, USAGE_STATIC, 0);
     }
 
     wglMakeCurrent(hdc, graphic->m_glContext);

@@ -104,6 +104,7 @@ void renderTargetInit(renderTargetImpl_t* _renderTarget, const int _width, const
 	glBindFramebuffer(GL_FRAMEBUFFER, _renderTarget->m_framebuffer);
 	assert(glDebugErrorCheck() == false);
 
+	// TODO(Victor): finish to properly create a function to init and setting up the depth stencil
 	//setupDepthStencil(_renderTarget, GL_TEXTURE_2D, _depthBits, _stencilBits, texWidth, texHeight);
 
 
