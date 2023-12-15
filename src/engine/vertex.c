@@ -131,3 +131,5 @@ void vertexArrayAdd(vertexArray_t* _vertexArray, const char* _name, const vertex
 }
 
 void vertexBufferInit(vertexBuffer_t* _vertexBuffer, const uint32_t _count, const vertexArray_t* _vertexArray, const int _instanceDataStepRate);
+float* vertexBufferLockAll(vertexBuffer_t* _vertexBuffer);
+void vertexBufferUnlockAll(vertexBuffer_t* _vertexBuffer);

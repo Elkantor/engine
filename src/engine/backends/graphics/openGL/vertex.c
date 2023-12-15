@@ -42,3 +42,20 @@ void vertexBufferInit(vertexBuffer_t* _vertexBuffer, const uint32_t _count, cons
     const size_t dataSize = _count * _vertexBuffer->m_stride;
     assert(dataSize < 64);
 }
+
+float* vertexBufferLockAll(vertexBuffer_t* _vertexBuffer)
+{
+    _vertexBuffer->m_sectionStart = 0;
+	_vertexBuffer->m_sectionSize = _vertexBuffer->m_count * _vertexBuffer->m_stride;
+	return _vertexBuffer->m_data;
+}
+
+void vertexBufferUnlockAll(vertexBuffer_t* _vertexBuffer)
+{
+    glBindBuffer(GL_ARRAY_BUFFER, _vertexBuffer->m_bufferId);
+	assert(glDebugErrorCheck() == false);
+
+	uint8_t* u8data = (uint8_t*)_vertexBuffer->m_data;
+	glBufferSubData(GL_ARRAY_BUFFER, _vertexBuffer->m_sectionStart, _vertexBuffer->m_sectionSize, u8data + _vertexBuffer->m_sectionStart);
+	assert(glDebugErrorCheck() == false);
+}

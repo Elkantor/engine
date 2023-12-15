@@ -115,8 +115,21 @@ void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex,
             vertexArrayInit(&vertexArray);
             vertexArrayAdd(&vertexArray, "pos", VERTEX_DATA_F32_2X);
 
-            // TODO(Victor): finish to create the default vertex and fragment shader for the window
             vertexBufferInit(_vertexBuffer, 4, &vertexArray, 0);
+            float* vertices = vertexBufferLockAll(_vertexBuffer);
+            {
+                vertices[0] = -1.0f;
+                vertices[1] = -1.0f;
+                vertices[2] = -1.0f;
+                vertices[3] = 1.0f;
+                vertices[4] = 1.0f;
+                vertices[5] = 1.0f;
+                vertices[6] = 1.0f;
+                vertices[7] = -1.0f;
+            }
+            vertexBufferUnlockAll(_vertexBuffer);
+            
+            // TODO(Victor): finish to create the default vertex and fragment shader for the window
         }
 
     }
