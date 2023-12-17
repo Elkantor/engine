@@ -7,9 +7,10 @@
 #include "../../openGL/glWrapper.c"
 #include "../../../../window.c"
 #include "../../../../vertex.c"
+#include "../../../../shader.c"
 #include "graphics.c"
 
-void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex, graphicsArray_t* _graphics, const uint32_t _graphicIndex, const int _depthBufferBits, const int _stencilBufferBits, vertexBuffer_t* _vertexBuffer)
+void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex, graphicsArray_t* _graphics, const uint32_t _graphicIndex, const int _depthBufferBits, const int _stencilBufferBits)
 {
     graphic_t* graphic = &_graphics->m_data[_graphicIndex];
     graphic->m_depthBufferBits = _depthBufferBits;
@@ -115,8 +116,8 @@ void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex,
             vertexArrayInit(&vertexArray);
             vertexArrayAdd(&vertexArray, "pos", VERTEX_DATA_F32_2X);
 
-            vertexBufferInit(_vertexBuffer, 4, &vertexArray, 0);
-            float* vertices = vertexBufferLockAll(_vertexBuffer);
+            vertexBufferInit(&_graphics->m_vertexBuffer, 4, &vertexArray, 0);
+            float* vertices = vertexBufferLockAll(&_graphics->m_vertexBuffer);
             {
                 vertices[0] = -1.0f;
                 vertices[1] = -1.0f;
@@ -127,9 +128,32 @@ void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex,
                 vertices[6] = 1.0f;
                 vertices[7] = -1.0f;
             }
-            vertexBufferUnlockAll(_vertexBuffer);
+            vertexBufferUnlockAll(&_graphics->m_vertexBuffer);
             
+            indexBufferInit(&_graphics->m_indexBuffer, 6, INDEX_BUFFER_FORMAT_32BIT);
+            indexBufferData_t* indices = indexBufferLockAll(&_graphics->m_indexBuffer);
+            {
+                indices->m_data32Bits[0] = 0;
+                indices->m_data32Bits[1] = 1;
+                indices->m_data32Bits[2] = 2;
+                indices->m_data32Bits[3] = 0;
+                indices->m_data32Bits[4] = 2;
+                indices->m_data32Bits[5] = 3;
+            }
+            indexBufferUnlockAll(&_graphics->m_indexBuffer);
+
+            const char* vertexShader = "#version 450\n"
+                "in vec2 pos;\n"
+                "out vec2 texCoord;\n"
+                "void main() {\n"
+                    "gl_Position = vec4(pos, 0.5, 1.0);\n"
+                    "texCoord = (pos + 1.0) / 2.0;\n"
+                "}\n";
+
+            //shaderInit(_vertexBuffer, vertexShader, strlen(vertexShader), SHADER_TYPE_VERTEX);
+
             // TODO(Victor): finish to create the default vertex and fragment shader for the window
+
         }
 
     }
@@ -150,7 +174,7 @@ void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex,
 	assert(glDebugErrorCheck() == false);
 }
 
-void windowGraphicsInit(windowArray_t* _windows, const uint32_t _windowIndex, graphicsArray_t* _graphics, const uint32_t _graphicIndex, vertexBuffer_t* _vertexBuffer)
+void windowGraphicsInit(windowArray_t* _windows, const uint32_t _windowIndex, graphicsArray_t* _graphics, const uint32_t _graphicIndex)
 {
     assert(_windows->m_data[_windowIndex].m_graphicIndex == UINT32_MAX);
     assert(_windows->m_data[_windowIndex].m_handle != NULL);
@@ -160,14 +184,11 @@ void windowGraphicsInit(windowArray_t* _windows, const uint32_t _windowIndex, gr
     const int depthBits = window->m_frameBufferOptions.m_depthBits;
     const int stencilBits = window->m_frameBufferOptions.m_stencilBits;
 
-    internalGLContextInit(_windows, _windowIndex, _graphics, _graphicIndex, depthBits, stencilBits, _vertexBuffer);
+    internalGLContextInit(_windows, _windowIndex, _graphics, _graphicIndex, depthBits, stencilBits);
 
-    if (_windows->m_size == 1)
+    if (wglSwapIntervalEXT != NULL)
     {
-        if (wglSwapIntervalEXT != NULL)
-        {
-            wglSwapIntervalEXT(_windows->m_data[_windowIndex].m_frameBufferOptions.m_verticalSync);
-        }
+        wglSwapIntervalEXT(_windows->m_data[_windowIndex].m_frameBufferOptions.m_verticalSync);
     }
 
     int maxColorAttachments = 8;

@@ -34,9 +34,7 @@ int appKickstart(int argc, char **argv)
 	graphicsArrayInit(&graphics);
 
     windowInit(&windows, 0, 1024, 768, "First Window");
-
-    static vertexBuffer_t windowVertexBuffer;
-    windowGraphicsInit(&windows, 0, &graphics, 0, &windowVertexBuffer);
+    windowGraphicsInit(&windows, 0, &graphics, 0);
 
     const uint64_t stackSize = appStackSizeGet();
     appStart(&app);
