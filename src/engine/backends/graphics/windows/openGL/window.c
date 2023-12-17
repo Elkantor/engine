@@ -150,8 +150,17 @@ void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex,
                     "texCoord = (pos + 1.0) / 2.0;\n"
                 "}\n";
 
-            //shaderInit(_vertexBuffer, vertexShader, strlen(vertexShader), SHADER_TYPE_VERTEX);
+            shaderInit(&_graphics->m_vertexShader, vertexShader, strlen(vertexShader), SHADER_TYPE_VERTEX);
 
+            const char* fragmentShader = "#version 450\n"
+                "uniform sampler2D tex;\n"
+                "in vec2 texCoord;\n"
+                "out vec4 frag;\n"
+                "void main() {\n"
+                    "frag = texture(tex, texCoord);\n"
+                "}\n";
+
+            shaderInit(&_graphics->m_fragmentShader, fragmentShader, strlen(fragmentShader), SHADER_TYPE_FRAGMENT);
             // TODO(Victor): finish to create the default vertex and fragment shader for the window
 
         }

@@ -8,6 +8,7 @@
 #include "../../openGL/renderTarget.c"
 #include "../../openGL/vertex.c"
 #include "../../openGL/indexBuffer.c"
+#include "../../openGL/shader.c"
 
 typedef struct
 {
@@ -26,6 +27,8 @@ typedef struct graphicsArray
 
 	vertexBuffer_t m_vertexBuffer;
 	indexBuffer_t m_indexBuffer;
+	shader_t m_vertexShader;
+	shader_t m_fragmentShader;
 } graphicsArray_t;
 
 uint32_t graphicsArrayCapacityGet(void)

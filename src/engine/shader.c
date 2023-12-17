@@ -13,4 +13,4 @@ typedef enum
 
 typedef struct shader shader_t;
 
-void shaderInit(shader_t* _shader, const void* _data, const size_t _length, const shaderType_t _type);
+void shaderInit(shader_t* _shader, const char* _data, const size_t _length, const shaderType_t _type);

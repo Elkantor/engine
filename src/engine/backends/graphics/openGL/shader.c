@@ -10,7 +10,7 @@ typedef struct shader
 	unsigned m_glId;
 } shader_t;
 
-void shaderInit(shader_t* _shader, const void* _data, const size_t _length, const shaderType_t _type)
+void shaderInit(shader_t* _shader, const char* _data, const size_t _length, const shaderType_t _type)
 {
     memset(_shader, 0, sizeof(*_shader));
 
