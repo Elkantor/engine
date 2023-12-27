@@ -17,6 +17,36 @@ typedef struct renderTargetImpl
 	bool m_hasDepth;
 } renderTargetImpl_t;
 
+void renderTargetDepthStencilSetup(renderTargetImpl_t* _renderTarget, const GLenum _textureType, const int _depthBufferBits, const int _stencilBufferBits, const int _width, const int _height)
+{
+	if (_depthBufferBits > 0 && _stencilBufferBits > 0)
+	{
+		_renderTarget->m_hasDepth = true;
+		
+		const GLenum internalFormat = (_depthBufferBits == 24) ? GL_DEPTH24_STENCIL8 : GL_DEPTH32F_STENCIL8;
+
+		glGenTextures(1, &_renderTarget->m_depthTexture);
+		assert(glDebugErrorCheck() == false);
+
+		glBindTexture(_textureType, _renderTarget->m_depthTexture);
+		assert(glDebugErrorCheck() == false);
+
+		glTexImage2D(_textureType, 0, internalFormat, _width, _height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, 0);
+		assert(glDebugErrorCheck() == false);
+
+		glTexParameteri(_textureType, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(_textureType, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(_textureType, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(_textureType, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		assert(glDebugErrorCheck() == false);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, _renderTarget->m_framebuffer);
+		assert(glDebugErrorCheck() == false);
+
+		// TODO(Victor): finish this function
+	}
+}
+
 void renderTargetInit(renderTargetImpl_t* _renderTarget, const int _width, const int _height, const int _depthBits, const int _stencilBits, const int _samplesPerPixel, const renderTargetFormat_t _format)
 {
 	_renderTarget->m_globalData.m_width = _width;
@@ -104,9 +134,7 @@ void renderTargetInit(renderTargetImpl_t* _renderTarget, const int _width, const
 	glBindFramebuffer(GL_FRAMEBUFFER, _renderTarget->m_framebuffer);
 	assert(glDebugErrorCheck() == false);
 
-	// TODO(Victor): finish to properly create a function to init and setting up the depth stencil
-	//setupDepthStencil(_renderTarget, GL_TEXTURE_2D, _depthBits, _stencilBits, texWidth, texHeight);
-
+	renderTargetDepthStencilSetup(_renderTarget, GL_TEXTURE_2D, _depthBits, _stencilBits, texWidth, texHeight);
 
 	if (_format == RENDER_TARGET_FORMAT_16BIT_DEPTH)
 	{
