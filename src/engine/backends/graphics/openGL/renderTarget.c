@@ -43,7 +43,36 @@ void renderTargetDepthStencilSetup(renderTargetImpl_t* _renderTarget, const GLen
 		glBindFramebuffer(GL_FRAMEBUFFER, _renderTarget->m_framebuffer);
 		assert(glDebugErrorCheck() == false);
 
-		// TODO(Victor): finish this function
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, _textureType, _renderTarget->m_depthTexture, 0);
+		assert(glDebugErrorCheck() == false);
+	}
+	else if (_depthBufferBits > 0)
+	{
+		_renderTarget->m_hasDepth = true;
+
+		// Texture
+		glGenTextures(1, &_renderTarget->m_depthTexture);
+		assert(glDebugErrorCheck() == false);
+
+		glBindTexture(_textureType, _renderTarget->m_depthTexture);
+		assert(glDebugErrorCheck() == false);
+
+		const GLint format = _depthBufferBits == 16 ? GL_DEPTH_COMPONENT16 : GL_DEPTH_COMPONENT;
+
+		glTexImage2D(_textureType, 0, format, _width, _height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, 0);
+		assert(glDebugErrorCheck() == false);
+
+		glTexParameteri(_textureType, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(_textureType, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(_textureType, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(_textureType, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		assert(glDebugErrorCheck() == false);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, _renderTarget->m_framebuffer);
+		assert(glDebugErrorCheck() == false);
+
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, _textureType, _renderTarget->m_depthTexture, 0);
+		assert(glDebugErrorCheck() == false);
 	}
 }
 
