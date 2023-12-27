@@ -35,3 +35,8 @@ uint32_t graphicsArrayCapacityGet(void)
 {
     return offsetof(graphicsArray_t, m_size) / sizeof(graphic_t); 
 }
+
+void graphicsArrayInit(graphicsArray_t* _graphicsArray)
+{
+	memset(_graphicsArray, 0, sizeof(*_graphicsArray));
+}
