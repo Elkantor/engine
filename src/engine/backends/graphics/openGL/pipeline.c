@@ -12,6 +12,4 @@ typedef struct pipeline
 void pipelineInit(pipeline_t* _pipeline)
 {
     memset(_pipeline, 0, sizeof(*_pipeline));
-
-
 }

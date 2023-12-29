@@ -7,6 +7,7 @@
 #include <string.h>
 #include <windef.h>
 #include <DbgHelp.h>
+#include <dwmapi.h>
 
 #include "../../../window.c"
 #include "../../../utils/recti32_t.c"
@@ -26,7 +27,8 @@ void windowInit(windowArray_t* _windows, const uint32_t _index, const int _width
 		windowData->m_displayIndex = displayPrimaryGet(&_windows->m_app->m_displays);
 	}
 
-	windowCreate(&_windows->m_app->m_displays, windowData, false);
+	const bool appInitialized = _windows->m_size > 0;
+	windowCreate(&_windows->m_app->m_displays, windowData, appInitialized);
 	_windows->m_size += 1;
 	
 	windowShow(windowData);
@@ -100,6 +102,8 @@ LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LP
 			if (k_windows->m_size > 0)
 			{
 				const uint32_t windowIndex = windowIndexGet(k_windows, _hWnd);
+				if (windowIndex == UINT32_MAX) break;
+
 				windowData_t* window = &k_windows->m_data[windowIndex];
 				const int width = LOWORD(_lParam);
 				const int height = HIWORD(_lParam);
@@ -113,7 +117,7 @@ LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LP
 		}
 	}
 
-	return DefWindowProc(_hWnd, _msg, _wParam, _lParam);
+	return DefWindowProcW(_hWnd, _msg, _wParam, _lParam);
 }
 
 void RegisterWindowClass(HINSTANCE _hInstance, const wchar_t* _className)
@@ -346,10 +350,17 @@ void windowCreate(displayDataArray_t* _displays, windowData_t* _windowData, cons
 	{
 		char classNameUTF8[256] = { 0 };
 		WideCharToMultiByte(CP_UTF8, 0, windowClassName, -1, classNameUTF8, 256 - 1, NULL, NULL);
+
 		_windowData->m_handle = CreateWindowExA(dwExStyle, classNameUTF8, _windowData->m_title, dwStyle, finalRect.m_x, finalRect.m_y, finalRect.m_width, finalRect.m_height, NULL, NULL, inst, NULL);
 	}
 	
 	SetCursor(LoadCursor(0, IDC_ARROW));
+
+	// Top bar in dark mode
+	{
+		DWORD value = 1;
+		DwmSetWindowAttribute(_windowData->m_handle, 20, &value, sizeof(value));
+	}
 }
 
 void windowShow(windowData_t* _window)

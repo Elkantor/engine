@@ -161,8 +161,9 @@ void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex,
                 "}\n";
 
             shaderInit(&_graphics->m_fragmentShader, fragmentShader, strlen(fragmentShader), SHADER_TYPE_FRAGMENT);
-            // TODO(Victor): finish to create the default vertex and fragment shader for the window
 
+            // TODO(Victor): finish to create the pipeline
+            pipelineInit(&windowPipeline);
         }
 
     }
