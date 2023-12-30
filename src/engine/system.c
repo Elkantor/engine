@@ -7,6 +7,8 @@
 #include "window.c"
 #include "display.c"
 
+typedef struct globalContext globalContext_t;
+
 typedef struct
 {
     int m_data[256];
@@ -35,8 +37,8 @@ uint32_t appNameCapacityGet(void)
 
 
 int appKickstart(int _argc, char** _argv);
-void appUpdate(app_t* _app);
-void appStart(app_t* _app);
+void appUpdate(app_t* _app, globalContext_t* _globalContext);
+void appStart(app_t* _app, globalContext_t* _globalContext);
 void appStop(app_t* _app);
 void appInit(app_t* _app, const char* _name);
 

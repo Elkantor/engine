@@ -23,7 +23,8 @@ typedef enum
 {
 	WINDOW_MODE_WINDOW,
 	WINDOW_MODE_FULLSCREEN,
-	WINDOW_MODE_FULLSCREEN_EXCLUSIVE // Only relevant for Windows
+	WINDOW_MODE_FULLSCREEN_EXCLUSIVE, // Only relevant for Windows
+	WINDOW_MODE_TOOL, // Only relevant for windows
 } windowMode_t;
 
 typedef struct
@@ -107,8 +108,8 @@ void windowArrayInit(app_t* _app, windowArray_t* _windows)
 	k_windows = _windows;
 }
 
-void windowInit(windowArray_t* _windows, const uint32_t _index, const int _width, const int _height, const char* _name);
-void windowCreate(displayDataArray_t* _displays, windowData_t* _windowData, const bool _appInitialized);
+void windowInit(windowArray_t* _windows, const uint32_t _index, const int _width, const int _height, const char* _name, const windowMode_t _mode, void* _ownerHandle);
+void windowCreate(displayDataArray_t* _displays, windowData_t* _windowData, const bool _appInitialized, void* _ownerHandle);
 void windowShow(windowData_t* _window);
 void windowHide(windowData_t* _window);
 void windowDestroy(windowArray_t* _windows, void* _handle);
@@ -119,3 +120,4 @@ void windowGraphicsInit(windowArray_t* _windows, const uint32_t _windowIndex, gr
 
 // User implemenatations
 void windowResize(windowData_t* _window, const int _width, const int _height);
+void windowPaint(windowData_t* _window);

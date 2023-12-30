@@ -62,9 +62,9 @@ bool internalMessagesHandle(void)
 	return true;
 }
 
-bool internalFrame(app_t* _app)
+bool internalFrame(app_t* _app, globalContext_t* _globalContext)
 {
-	appUpdate(_app);
+	appUpdate(_app, _globalContext);
 	internalMessagesHandle();
 
 	return _app->m_running;
@@ -77,11 +77,11 @@ void appStop(app_t* _app)
 	_app->m_running = false;
 }
 
-void appStart(app_t* _app)
+void appStart(app_t* _app, globalContext_t* _globalContext)
 {
 	_app->m_running = true;
 
-	while (internalFrame(_app)) 
+	while (internalFrame(_app, _globalContext)) 
 	{
 	}
 
@@ -106,7 +106,7 @@ void appInit(app_t* _app, const char* _name)
 	}
 }
 
-uint64_t appStackSizeGet()
+uint64_t appStackSizeGet(void)
 {
 	uint64_t low, high;
 	GetCurrentThreadStackLimits(&low, &high);

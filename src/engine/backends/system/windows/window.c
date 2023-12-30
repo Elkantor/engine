@@ -13,7 +13,7 @@
 #include "../../../utils/recti32_t.c"
 #include "../../../system.c"
 
-void windowInit(windowArray_t* _windows, const uint32_t _index, const int _width, const int _height, const char* _name)
+void windowInit(windowArray_t* _windows, const uint32_t _index, const int _width, const int _height, const char* _name, const windowMode_t _mode, void* _ownerHandle)
 {
 	windowData_t* windowData = &_windows->m_data[_windows->m_size];
 
@@ -25,10 +25,11 @@ void windowInit(windowArray_t* _windows, const uint32_t _index, const int _width
 		windowData->m_height = _height;
 		windowData->m_title = _name;
 		windowData->m_displayIndex = displayPrimaryGet(&_windows->m_app->m_displays);
+		windowData->m_mode = _mode;
 	}
 
 	const bool appInitialized = _windows->m_size > 0;
-	windowCreate(&_windows->m_app->m_displays, windowData, appInitialized);
+	windowCreate(&_windows->m_app->m_displays, windowData, appInitialized, _ownerHandle);
 	_windows->m_size += 1;
 	
 	windowShow(windowData);
@@ -112,6 +113,18 @@ LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LP
 				window->m_height = height;
 
 				windowResize(window, width, height);
+			}
+			break;
+		}
+		case WM_PAINT:
+		{
+			if (k_windows->m_size > 0)
+			{
+				const uint32_t windowIndex = windowIndexGet(k_windows, _hWnd);
+				if (windowIndex == UINT32_MAX) break;
+
+				windowData_t* window = &k_windows->m_data[windowIndex];
+				windowPaint(window);
 			}
 			break;
 		}
@@ -208,6 +221,10 @@ DWORD dwStyleGet(const windowMode_t _mode, const int _features)
 		{
 			return WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP;
 		}
+		case WINDOW_MODE_TOOL:
+		{
+			return WS_POPUP | WS_SYSMENU | WS_THICKFRAME | WS_CAPTION | WS_VISIBLE;
+		}
 		case WINDOW_MODE_WINDOW:
 		{
 			return styleGet(_features);
@@ -251,6 +268,10 @@ DWORD dwStyleExGet(const windowMode_t _mode, const int _features)
 		case WINDOW_MODE_WINDOW:
 		{
 			return styleExGet(_features);
+		}
+		case WINDOW_MODE_TOOL:
+		{
+			return WS_EX_TOOLWINDOW;
 		}
 		default:
 		{
@@ -309,7 +330,7 @@ recti32_t windowRectCalculate(const windowData_t* _windowData, const displayData
 	}
 }
 
-void windowCreate(displayDataArray_t* _displays, windowData_t* _windowData, const bool _appInitialized)
+void windowCreate(displayDataArray_t* _displays, windowData_t* _windowData, const bool _appInitialized, void* _ownerHandle)
 {
 	const wchar_t* windowClassName = L"Window";
 	HINSTANCE inst = GetModuleHandle(NULL);
@@ -351,7 +372,7 @@ void windowCreate(displayDataArray_t* _displays, windowData_t* _windowData, cons
 		char classNameUTF8[256] = { 0 };
 		WideCharToMultiByte(CP_UTF8, 0, windowClassName, -1, classNameUTF8, 256 - 1, NULL, NULL);
 
-		_windowData->m_handle = CreateWindowExA(dwExStyle, classNameUTF8, _windowData->m_title, dwStyle, finalRect.m_x, finalRect.m_y, finalRect.m_width, finalRect.m_height, NULL, NULL, inst, NULL);
+		_windowData->m_handle = CreateWindowExA(dwExStyle, classNameUTF8, _windowData->m_title, dwStyle, finalRect.m_x, finalRect.m_y, finalRect.m_width, finalRect.m_height, _ownerHandle, NULL, inst, NULL);
 	}
 	
 	SetCursor(LoadCursor(0, IDC_ARROW));
