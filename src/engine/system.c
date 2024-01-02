@@ -6,6 +6,7 @@
 
 #include "window.c"
 #include "display.c"
+#include "string/wString256.c"
 
 typedef struct globalContext globalContext_t;
 
@@ -41,5 +42,6 @@ void appUpdate(app_t* _app, globalContext_t* _globalContext);
 void appStart(app_t* _app, globalContext_t* _globalContext);
 void appStop(app_t* _app);
 void appInit(app_t* _app, const char* _name);
+void appPathAbsoluteGet(wString256_t* _outPath);
 
 uint64_t appStackSizeGet(void);

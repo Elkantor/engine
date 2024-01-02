@@ -12,3 +12,8 @@
 #include "engine/backends/system/windows/display.c"
 #include "engine/backends/system/windows/system.c"
 
+// Mctrl
+#include <commctrl.h> // needs windows.h defined in system.c
+#include "../libs/mctrl/mctrl.h"
+#include "../libs/mctrl/mCtrl/html.h"
+

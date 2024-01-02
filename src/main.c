@@ -4,11 +4,11 @@
 #include "appconfig.c"
 
 // NOTE(Victor): build with mingw on windows:
-// gcc src/main.c -g -Wall -Werror -lDwmapi -lwinmm -lgdi32 -lopengl32 -lraylib -L./libs/raylib && ./cv2pdb64.exe a.exe
+// gcc src/main.c -g -Wall -Werror -lmCtrl -lcomctl32 -lDwmapi -lwinmm -lgdi32 -lopengl32 -lraylib -L./libs/raylib -L./libs/mctrl
 // devenv a.exe (to open visual studio debugger)
 
 // NOTE(Victor): build with zig cc (clang) compiler on windows:
-// zig cc src/main.c -g -Wall -Werror -lDwmapi -lwinmm -lgdi32 -lopengl32 -lraylib -L./libs/raylib
+// zig cc src/main.c -g -Wall -Werror -lmCtrl -lcomctl32 -lDwmapi -lwinmm -lgdi32 -lopengl32 -lraylib -L./libs/raylib -L./libs/mctrl
 // devenv a.exe (to open visual studio debugger)
 
 void windowResize(windowData_t* _window, const int _width, const int _height)
@@ -77,6 +77,9 @@ void appUpdate(app_t* _app, globalContext_t* _global)
 
 int appKickstart(int argc, char **argv)
 {
+    wString256_t rootPath;
+    appPathAbsoluteGet(&rootPath);
+
     static app_t app;
     appInit(&app, "My App");
     
@@ -121,12 +124,14 @@ int appKickstart(int argc, char **argv)
         SetWindowPos(GetWindowHandle(), HWND_TOP, 0, 0, 800, 600, SWP_DRAWFRAME);
     }
 
+    /* Register class of HTML control. */
+    mcHtml_Initialize();
+
     const uint64_t stackSize = appStackSizeGet();
     printf("App stack size left: %zu\n", stackSize);
 
     appStart(&app, &globalContext);
 
-    // Fermer la fenêtre raylib
     RL_CloseWindow();
 
     return 0;

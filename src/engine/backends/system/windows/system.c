@@ -115,6 +115,34 @@ uint64_t appStackSizeGet(void)
 	return remaining;
 }
 
+void appPathAbsoluteGet(wString256_t* _outPath)
+{
+	const HMODULE hModule = GetModuleHandle(NULL);
+
+	if (hModule != NULL)
+	{
+		GetModuleFileNameW(NULL, _outPath->m_data, wString256CapacityGet());
+
+		size_t len = wcslen(_outPath->m_data);
+
+		while (len > 0)
+		{
+			const wchar_t current = _outPath->m_data[len - 1];
+
+			if (current != L'\\')
+			{
+				len -= 1;
+			}
+			else
+			{
+				_outPath->m_data[len - 1] = L'\0';
+				_outPath->m_size = len - 1;
+				break;
+			}
+		}
+	}
+}
+
 int WINAPI WinMain(HINSTANCE _hInstance, HINSTANCE _hPrevInstance, LPSTR _lpCmdLine, int _nCmdShow)
 {
 	const int ret = appKickstart(__argc, __argv);
