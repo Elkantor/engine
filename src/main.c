@@ -13,20 +13,30 @@
 
 void windowResize(windowData_t* _window, const int _width, const int _height)
 {
-    printf("resized %d, %d\n", _width, _height);
+    
 }
 
-void windowPaint(windowData_t* _window)
+void windowNotify(windowData_t* _window, void* _data)
 {
-    const char* toolWindow = "Tool Window";
-    if ((uintptr_t)_window->m_title == (uintptr_t)toolWindow)
+    NMHDR* hdr = (NMHDR*)_data;
+
+    if (hdr->code == MC_HN_APPLINK)
     {
-        PAINTSTRUCT ps;
-        HDC hdc = BeginPaint(_window->m_handle, &ps);
-        {
-            TextOut(hdc, 5, 5, "greeting", strlen("greeting"));
-        }
-        EndPaint(_window->m_handle, &ps);
+        /* User has activated the application link (app: protocol).
+         * If it is the "Say Hello" link in our resource page, we greet
+         * the user as an URL of the link suggests.
+         * If it is the link to change the dynamic contents, we do so.
+         * Otherwise as a fallback we just show an URL of the link.
+         */
+        MC_NMHTMLURLW* nmhtmlurl = (MC_NMHTMLURLW*)hdr;
+        if (strcmp((char*)nmhtmlurl->pszUrl, "app:SayHello") == 0)
+            MessageBoxA(_window->m_handle, "Button Clicked", "Button Clicked!", MB_OK);
+        //else if (_tcscmp(nmhtmlurl->pszUrl, _T("app:set_dynamic")) == 0)
+        //    GenerateDynamicContents();
+        //else if (_tcscmp(nmhtmlurl->pszUrl, _T("app:call_js_func")) == 0)
+        //    CallJavaScriptFunc();
+        else
+            MessageBoxW(_window->m_handle, nmhtmlurl->pszUrl, L"URL of the app link", MB_OK);
     }
 }
 
@@ -77,16 +87,20 @@ void appUpdate(app_t* _app, globalContext_t* _global)
 
 int appKickstart(int argc, char **argv)
 {
-    wString256_t rootPath;
-    appPathAbsoluteGet(&rootPath);
+    // Mctrl initializations
+    mcHtml_Initialize();
+    InitCommonControls();
 
     static app_t app;
     appInit(&app, "My App");
     
     static windowArray_t windows;
     windowArrayInit(&app, &windows);
-    windowInit(&windows, 0, 1024, 768, "First Window", WINDOW_MODE_WINDOW, NULL);
-    windowInit(&windows, 1, 600, 400, "Tool Window", WINDOW_MODE_TOOL, windows.m_data[0].m_handle);
+    windowInit(&windows, 0, 1024, 768, "First Window", WINDOW_MODE_WINDOW, 0, NULL);
+    windowInit(&windows, 1, 600, 400, "Tool Window", WINDOW_MODE_WINDOW, WINDOW_FEATURE_HTML, NULL);
+
+    const string32_t url = (string32_t){ .m_data = "\\res\\doc2.html", .m_size = 32 };
+    windowHTMLAdd(&windows, 1, &url);
 
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT | FLAG_BORDERLESS_WINDOWED_MODE | FLAG_WINDOW_UNDECORATED);
     InitWindow(800, 600, "Raylib Window");
@@ -124,15 +138,13 @@ int appKickstart(int argc, char **argv)
         SetWindowPos(GetWindowHandle(), HWND_TOP, 0, 0, 800, 600, SWP_DRAWFRAME);
     }
 
-    /* Register class of HTML control. */
-    mcHtml_Initialize();
-
     const uint64_t stackSize = appStackSizeGet();
     printf("App stack size left: %zu\n", stackSize);
 
     appStart(&app, &globalContext);
 
     RL_CloseWindow();
+    mcHtml_Terminate();
 
     return 0;
 }

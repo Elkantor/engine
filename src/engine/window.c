@@ -17,6 +17,7 @@ typedef enum
     WINDOW_FEATURE_MAXIMIZABLE = 4,
     WINDOW_FEATURE_BORDERLESS = 8,
 	WINDOW_FEATURE_ON_TOP = 16,
+	WINDOW_FEATURE_HTML = 32,
 } windowFeature_t;
 
 typedef enum
@@ -50,8 +51,9 @@ void framebufferOptionsDefaultSet(framebufferOptions_t* _frame)
 typedef struct windowData
 {
 	framebufferOptions_t m_frameBufferOptions;
-	void* m_handle;
 	const char* m_title;
+	void* m_handle;
+	void* m_uiHandle;
 	int m_x;
 	int m_y;
 	int m_width;
@@ -61,14 +63,14 @@ typedef struct windowData
 	windowMode_t m_mode;
 	bool m_visible;
 	uint32_t m_graphicIndex;
-
 } windowData_t;
 
 void windowDataDefaultSet(windowData_t* _win)
 {
 	framebufferOptionsDefaultSet(&_win->m_frameBufferOptions);
 	_win->m_handle = NULL;
-	_win->m_title = 0;
+	_win->m_uiHandle = NULL;
+	_win->m_title = NULL;
 	_win->m_x = -1;
 	_win->m_y = -1;
 	_win->m_width = 800;
@@ -108,16 +110,18 @@ void windowArrayInit(app_t* _app, windowArray_t* _windows)
 	k_windows = _windows;
 }
 
-void windowInit(windowArray_t* _windows, const uint32_t _index, const int _width, const int _height, const char* _name, const windowMode_t _mode, void* _ownerHandle);
+void windowInit(windowArray_t* _windows, const uint32_t _index, const int _width, const int _height, const char* _name, const windowMode_t _mode, const windowFeature_t _features, void* _ownerHandle);
 void windowCreate(displayDataArray_t* _displays, windowData_t* _windowData, const bool _appInitialized, void* _ownerHandle);
 void windowShow(windowData_t* _window);
 void windowHide(windowData_t* _window);
 void windowDestroy(windowArray_t* _windows, void* _handle);
 uint32_t windowIndexGet(windowArray_t* _windows, void* _handle);
+void windowHTMLAdd(windowArray_t* _windows, const uint32_t _index, const string32_t* _path);
 
 // Graphics implementations
 void windowGraphicsInit(windowArray_t* _windows, const uint32_t _windowIndex, graphicsArray_t* _graphics, const uint32_t _graphicIndex);
 
 // User implemenatations
 void windowResize(windowData_t* _window, const int _width, const int _height);
-void windowPaint(windowData_t* _window);
+int windowPaint(windowData_t* _window);
+void windowNotify(windowData_t* _window, void* _data);

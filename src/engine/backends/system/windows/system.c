@@ -55,6 +55,11 @@ bool internalMessagesHandle(void)
 
 	while (PeekMessage(&message, 0, 0, 0, PM_REMOVE))
 	{
+		if (IsDialogMessage(k_windows->m_data[0].m_handle, &message))
+		{
+			continue;
+		}
+
 		TranslateMessage(&message);
 		DispatchMessage(&message);
 	}

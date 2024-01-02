@@ -13,7 +13,7 @@
 #include "../../../utils/recti32_t.c"
 #include "../../../system.c"
 
-void windowInit(windowArray_t* _windows, const uint32_t _index, const int _width, const int _height, const char* _name, const windowMode_t _mode, void* _ownerHandle)
+void windowInit(windowArray_t* _windows, const uint32_t _index, const int _width, const int _height, const char* _name, const windowMode_t _mode, const windowFeature_t _features, void* _ownerHandle)
 {
 	windowData_t* windowData = &_windows->m_data[_windows->m_size];
 
@@ -26,6 +26,7 @@ void windowInit(windowArray_t* _windows, const uint32_t _index, const int _width
 		windowData->m_title = _name;
 		windowData->m_displayIndex = displayPrimaryGet(&_windows->m_app->m_displays);
 		windowData->m_mode = _mode;
+		windowData->m_windowFeatures |= _features;
 	}
 
 	const bool appInitialized = _windows->m_size > 0;
@@ -59,9 +60,36 @@ void windowDestroy(windowArray_t* _windows, void* _handle)
 		return;
 	}
 
+	if (_windows->m_data[windowIndex].m_uiHandle != NULL)
+	{
+		DestroyWindow(_handle);
+	}
+
 	DestroyWindow(_handle);
 	memset(&_windows->m_data[windowIndex], 0, sizeof(_windows->m_data[0]));
 	_windows->m_data[windowIndex] = _windows->m_data[--_windows->m_size];
+}
+
+void windowHTMLAdd(windowArray_t* _windows, const uint32_t _index, const string32_t* _path)
+{
+	wString256_t absolutePath;
+	appPathAbsoluteGet(&absolutePath);
+
+	char absolutePathUTF8[128] = { 0 };
+	WideCharToMultiByte(CP_UTF8, 0, absolutePath.m_data, -1, absolutePathUTF8, 64 - 1, NULL, NULL);
+
+	strncat_s(absolutePathUTF8, 128, _path->m_data, _path->m_size);
+
+	windowData_t* windowData = &_windows->m_data[_index];
+
+	windowData->m_uiHandle = CreateWindowA("mCtrl.html", absolutePathUTF8, WS_CHILD | WS_VISIBLE | WS_TABSTOP, 0, 0, 0, 0, windowData->m_handle, NULL, GetModuleHandle(NULL), windowData->m_handle);
+	
+	RECT clientRect;
+	GetWindowRect(windowData->m_handle, &clientRect);
+	const uint32_t width = clientRect.right - clientRect.left;
+	const uint32_t height = clientRect.bottom - clientRect.top;
+
+	SendMessage(windowData->m_handle, WM_SIZE, SIZE_RESTORED, width << 16 | height);
 }
 
 LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LPARAM _lParam)
@@ -73,6 +101,34 @@ LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LP
 	
 	switch (_msg) 
 	{
+		case WM_NOTIFY:
+		{
+			if (k_windows->m_size > 0)
+			{
+				const uint32_t windowIndex = windowIndexGet(k_windows, _hWnd);
+				if (windowIndex == UINT32_MAX) break;
+
+				windowData_t* window = &k_windows->m_data[windowIndex];
+				windowNotify(window, (NMHDR*)_lParam);
+				return 0;
+			}
+		}
+		case WM_SETFOCUS:
+		{
+			if (k_windows->m_size > 0)
+			{
+				const uint32_t windowIndex = windowIndexGet(k_windows, _hWnd);
+				if (windowIndex == UINT32_MAX) break;
+
+				windowData_t* window = &k_windows->m_data[windowIndex];
+
+				if (window->m_uiHandle != NULL)
+				{
+					SetFocus(window->m_uiHandle);
+				}
+			}
+			return 0;
+		}
 		case WM_NCCREATE:
 		{
 			break;
@@ -100,34 +156,49 @@ LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LP
 		}
 		case WM_SIZE:
 		{
-			if (k_windows->m_size > 0)
+			uint32_t windowIndex = windowIndexGet(k_windows, _hWnd);
+			if (windowIndex == UINT32_MAX)
 			{
-				const uint32_t windowIndex = windowIndexGet(k_windows, _hWnd);
-				if (windowIndex == UINT32_MAX) break;
-
-				windowData_t* window = &k_windows->m_data[windowIndex];
-				const int width = LOWORD(_lParam);
-				const int height = HIWORD(_lParam);
-
-				window->m_width = width;
-				window->m_height = height;
-
-				windowResize(window, width, height);
+				windowIndex = k_windows->m_size;
 			}
+
+			windowData_t* window = &k_windows->m_data[windowIndex];
+
+			if (window->m_uiHandle != NULL)
+			{
+				RECT clientRect;
+				GetWindowRect(window->m_handle, &clientRect);
+				const uint32_t width = clientRect.right - clientRect.left;
+				const uint32_t height = clientRect.bottom - clientRect.top;
+				SetWindowPos(window->m_uiHandle, NULL, 0, 0, width, height, SWP_NOZORDER);
+			}
+
+			const int width = LOWORD(_lParam);
+			const int height = HIWORD(_lParam);
+
+			window->m_width = width;
+			window->m_height = height;
+
+			windowResize(window, width, height);
 			break;
 		}
-		case WM_PAINT:
+		/*case WM_PAINT:
 		{
 			if (k_windows->m_size > 0)
 			{
 				const uint32_t windowIndex = windowIndexGet(k_windows, _hWnd);
-				if (windowIndex == UINT32_MAX) break;
+				if (windowIndex == UINT32_MAX) return DefWindowProcW(_hWnd, _msg, _wParam, _lParam);;
 
 				windowData_t* window = &k_windows->m_data[windowIndex];
-				windowPaint(window);
+				const int result = windowPaint(window);
+
+				if (result == -1)
+				{
+					return DefWindowProcW(_hWnd, _msg, _wParam, _lParam);
+				}
 			}
 			break;
-		}
+		}*/
 	}
 
 	return DefWindowProcW(_hWnd, _msg, _wParam, _lParam);

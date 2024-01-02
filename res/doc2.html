@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="doc2.js"></script>
+  <title>Bézier Curve</title>
+  <style>
+    .node {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      background-color: rgb(27, 27, 27);
+      border: 2px solid rgb(51, 51, 51);
+      box-shadow: rgba(0, 0, 0, 0.65) 2px 3px 4px, rgba(0, 0, 0, 0.23) 2px 2px 4px;
+      border-radius: 10%;
+      cursor: move;
+      behavior: url(./PIE.htc);
+    }
+
+    .draggable {
+      position: absolute;
+      cursor: move;
+      behavior: url(./PIE.htc);
+    }
+
+  </style>
+</head>
+<body>
+  <button onclick='document.getElementById("SayHello").click();'>Button test</button>
+  <a id="SayHello" href="app:SayHello" hidden></a>
+  
+  
+    <div id="div1" class="draggable node" style="top: 100px; left: 100px;"></div>
+    <div id="div2" class="draggable node" style="top: 200px; left: 300px;"></div>
+</body>
+</html>

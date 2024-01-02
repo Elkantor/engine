@@ -14,6 +14,7 @@
 
 // Mctrl
 #include <commctrl.h> // needs windows.h defined in system.c
+#include <tchar.h>
 #include "../libs/mctrl/mctrl.h"
 #include "../libs/mctrl/mCtrl/html.h"
 
