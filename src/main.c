@@ -3,6 +3,9 @@
 #include "engine/utils/memory/memoryStack.c"
 #include "appconfig.c"
 
+static app_t app;
+static globalContext_t globalContext = { 0 };
+
 // NOTE(Victor): build with mingw on windows:
 // gcc src/main.c -g -Wall -Werror -lmCtrl -lcomctl32 -lDwmapi -lwinmm -lgdi32 -lopengl32 -lraylib -L./libs/raylib -L./libs/mctrl
 // devenv a.exe (to open visual studio debugger)
@@ -14,6 +17,15 @@
 void windowResize(windowData_t* _window, const int _width, const int _height)
 {
     
+}
+
+void windowFocus(windowData_t* _window)
+{
+    const char* mainWindow = "First Window";
+    if ((uintptr_t)_window->m_title == (uintptr_t)mainWindow)
+    {
+        SetFocus(GetWindowHandle());
+    }
 }
 
 void windowNotify(windowData_t* _window, void* _data)
@@ -30,13 +42,28 @@ void windowNotify(windowData_t* _window, void* _data)
          */
         MC_NMHTMLURLW* nmhtmlurl = (MC_NMHTMLURLW*)hdr;
         if (strcmp((char*)nmhtmlurl->pszUrl, "app:SayHello") == 0)
+        {
             MessageBoxA(_window->m_handle, "Button Clicked", "Button Clicked!", MB_OK);
-        //else if (_tcscmp(nmhtmlurl->pszUrl, _T("app:set_dynamic")) == 0)
-        //    GenerateDynamicContents();
-        //else if (_tcscmp(nmhtmlurl->pszUrl, _T("app:call_js_func")) == 0)
-        //    CallJavaScriptFunc();
+        }
+        else if (strcmp((char*)nmhtmlurl->pszUrl, "app:CopyClipboardAvatar") == 0)
+        {
+            MC_HMCALLSCRIPTFUNC csfArgs;
+            WCHAR pszRetVal[128];
+
+            csfArgs.cbSize = sizeof(MC_HMCALLSCRIPTFUNC);
+            csfArgs.pszRet = pszRetVal;
+            csfArgs.iRet = sizeof(pszRetVal) / sizeof(pszRetVal[0]);
+            csfArgs.cArgs = 1;
+            csfArgs.pszArg1 = L"avatar";
+            windowData_t* window = &k_windows->m_data[1];
+            SendMessageW(window->m_uiHandle, MC_HM_CALLSCRIPTFUNC, (WPARAM)L"getCopiedValue", (LPARAM)&csfArgs);
+
+            appClipboardCopy(pszRetVal, wcsnlen_s(pszRetVal, 128));
+        }
         else
+        {
             MessageBoxW(_window->m_handle, nmhtmlurl->pszUrl, L"URL of the app link", MB_OK);
+        }
     }
 }
 
@@ -44,7 +71,27 @@ void appUpdate(app_t* _app, globalContext_t* _global)
 {
     if (!WindowShouldClose() && _app->m_running)
     {
-        if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) { UpdateCamera(&_global->camera, CAMERA_CUSTOM); }
+        if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) 
+        { 
+            UpdateCamera(&_global->camera, CAMERA_CUSTOM);
+            MC_HMCALLSCRIPTFUNC csfArgs;
+            WCHAR pszRetVal[64];
+
+            wchar_t posX[5] = { 0 };
+            swprintf(posX, 5, L"%f", _global->camera.position.x);
+
+            csfArgs.cbSize = sizeof(MC_HMCALLSCRIPTFUNC);
+            csfArgs.pszRet = pszRetVal;
+            csfArgs.iRet = sizeof(pszRetVal) / sizeof(pszRetVal[0]);
+            csfArgs.pszArg1 = posX;
+            csfArgs.cArgs = 1;
+            windowData_t* window = &k_windows->m_data[1];
+            SendMessageW(window->m_uiHandle, MC_HM_CALLSCRIPTFUNC, (WPARAM)L"updateSlider", (LPARAM)&csfArgs);
+
+            /*const int result = _wtoi(pszRetVal);
+            _global->camera.position.x += result;*/
+        }
+
         if (IsKeyPressed('R')) _global->camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };
 
         // Update the shader with the camera view vector (points towards { 0.0f, 0.0f, 0.0f })
@@ -91,7 +138,6 @@ int appKickstart(int argc, char **argv)
     mcHtml_Initialize();
     InitCommonControls();
 
-    static app_t app;
     appInit(&app, "My App");
     
     static windowArray_t windows;
@@ -105,8 +151,6 @@ int appKickstart(int argc, char **argv)
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT | FLAG_BORDERLESS_WINDOWED_MODE | FLAG_WINDOW_UNDECORATED);
     InitWindow(800, 600, "Raylib Window");
 
-    // Init game global context
-    globalContext_t globalContext = { 0 };
     {
         globalContext.camera.position = (Vector3){ 10.0f, 10.0f, 10.0f }; // Camera position
         globalContext.camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };      // Camera looking at point

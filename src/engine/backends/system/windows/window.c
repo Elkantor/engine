@@ -126,6 +126,7 @@ LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LP
 				{
 					SetFocus(window->m_uiHandle);
 				}
+				windowFocus(window);
 			}
 			return 0;
 		}

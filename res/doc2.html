@@ -1,38 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="doc2.js"></script>
-  <title>Bézier Curve</title>
-  <style>
-    .node {
-      position: absolute;
-      width: 100px;
-      height: 100px;
-      background-color: rgb(27, 27, 27);
-      border: 2px solid rgb(51, 51, 51);
-      box-shadow: rgba(0, 0, 0, 0.65) 2px 3px 4px, rgba(0, 0, 0, 0.23) 2px 2px 4px;
-      border-radius: 10%;
-      cursor: move;
-      behavior: url(./PIE.htc);
-    }
-
-    .draggable {
-      position: absolute;
-      cursor: move;
-      behavior: url(./PIE.htc);
-    }
-
-  </style>
-</head>
-<body>
-  <button onclick='document.getElementById("SayHello").click();'>Button test</button>
-  <a id="SayHello" href="app:SayHello" hidden></a>
-  
-  
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link rel="stylesheet" href="font-awesome.css">
+    <title>Tool</title>
+  </head>
+  <body>
+    <button onclick='document.getElementById("SayHello").click();'>Button test</button>
+    <a id="SayHello" href="app:SayHello" hidden></a>
+    
+    <div class="slider-container">
+      <div class="slider-track" id="sliderTrack">
+        <div class="slider-thumb" id="sliderThumb"></div>
+      </div>
+      <div id="percentageDisplay" class="slider-percentage">0%</div>
+      <a id="updateCameraX" href="app:updateCameraX" hidden></a>
+    </div>
+    
     <div id="div1" class="draggable node" style="top: 100px; left: 100px;"></div>
     <div id="div2" class="draggable node" style="top: 200px; left: 300px;"></div>
-</body>
+
+    <label for="avatar" style="display: block; font: 1rem 'Fira Sans', sans-serif; margin: 0.4rem 0; behavior: url(./PIE.htc);">
+      Choose a profile picture:
+    </label>
+    <input onchange='document.getElementById("image").setAttribute("src", document.getElementById("avatar").value);' style="margin: 0.4rem 0; behavior: url(./PIE.htc);" type="file" id="avatar" name="avatar" accept="image/png, image/jpeg" />
+    <button onclick='document.getElementById("CopyClipboard").click()'>
+      <svg height="16" width="12" viewBox="0 0 384 512"><!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M192 0c-41.8 0-77.4 26.7-90.5 64H64C28.7 64 0 92.7 0 128V448c0 35.3 28.7 64 64 64H320c35.3 0 64-28.7 64-64V128c0-35.3-28.7-64-64-64H282.5C269.4 26.7 233.8 0 192 0zm0 64a32 32 0 1 1 0 64 32 32 0 1 1 0-64zM112 192H272c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16z"/></svg>
+    </button>
+    <a id="CopyClipboard" href="app:CopyClipboardAvatar" hidden></a>
+    <i class="fa-solid fa-c"></i>
+
+    <br>
+    <img id="image" src="" alt="Forest" style="border-radius: 4px; border: 1px solid #ddd; padding: 5px; width: 150px; height:150px; behavior: url(./PIE.htc);">
+    
+
+  <!-- Node -->
+  <link rel="stylesheet" href="node.css">
+  <script src="node.js"></script>
+
+  <!-- Slider -->
+  <link rel="stylesheet" href="slider.css">
+  <script src="slider.js"></script>
+
+  <script>
+    function getCopiedValue(id)
+    {
+      return document.getElementById(id).value;
+    }
+  </script>
 </html>

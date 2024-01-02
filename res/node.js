@@ -1,4 +1,3 @@
-window.onload = function() 
 {
     function connect(elem1, elem2)
     {
@@ -175,4 +174,4 @@ window.onload = function()
     var param1 = addParam("out", element1, "out1");
     var param2 = addParam("in", element2, "in1");
     connect(param1, param2);
-};
+}

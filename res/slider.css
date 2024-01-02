@@ -1,0 +1,32 @@
+.slider-container {
+    width: 200px;
+    margin-top: 1em;
+  }
+
+  .slider-track {
+    width: 80%;
+    height: 5px;
+    background-color: #ddd;
+    position: relative;
+    behavior: url(./PIE.htc);
+  }
+
+  .slider-thumb {
+    width: 20px;
+    height: 20px;
+    background-color: #007BFF;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    behavior: url(./PIE.htc);
+  }
+
+  .slider-percentage {
+    position: relative;
+    top: 50%;
+    left: 90%; /* Ajuster la position à droite du slider */
+    transform: translateY(-50%);
+    behavior: url(./PIE.htc);
+  }

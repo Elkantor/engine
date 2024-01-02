@@ -125,3 +125,4 @@ void windowGraphicsInit(windowArray_t* _windows, const uint32_t _windowIndex, gr
 void windowResize(windowData_t* _window, const int _width, const int _height);
 int windowPaint(windowData_t* _window);
 void windowNotify(windowData_t* _window, void* _data);
+void windowFocus(windowData_t* _window);
