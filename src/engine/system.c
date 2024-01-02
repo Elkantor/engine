@@ -43,5 +43,6 @@ void appStart(app_t* _app, globalContext_t* _globalContext);
 void appStop(app_t* _app);
 void appInit(app_t* _app, const char* _name);
 void appPathAbsoluteGet(wString256_t* _outPath);
+void appClipboardCopy(const wchar_t* _text, const size_t _len);
 
 uint64_t appStackSizeGet(void);

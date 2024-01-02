@@ -148,6 +148,26 @@ void appPathAbsoluteGet(wString256_t* _outPath)
 	}
 }
 
+void appClipboardCopy(const wchar_t* _text, const size_t _len)
+{
+	if (OpenClipboard(NULL) == false) return;
+
+	EmptyClipboard();
+
+	// Allouer de la mémoire pour la chaîne
+	HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, sizeof(*_text) * (_len + 1));
+	if (hMem == NULL) { CloseClipboard(); return; }
+
+	wchar_t* pMem = (wchar_t*)GlobalLock(hMem);
+	wcsncpy_s(pMem, (_len + 1) * sizeof(*_text), _text, _len + 1);
+
+	SetClipboardData(CF_UNICODETEXT, hMem);
+
+	CloseClipboard();
+
+	GlobalUnlock(hMem);
+}
+
 int WINAPI WinMain(HINSTANCE _hInstance, HINSTANCE _hPrevInstance, LPSTR _lpCmdLine, int _nCmdShow)
 {
 	const int ret = appKickstart(__argc, __argv);
