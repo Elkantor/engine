@@ -34,35 +34,38 @@ void windowNotify(windowData_t* _window, void* _data)
 
     if (hdr->code == MC_HN_APPLINK)
     {
-        /* User has activated the application link (app: protocol).
-         * If it is the "Say Hello" link in our resource page, we greet
-         * the user as an URL of the link suggests.
-         * If it is the link to change the dynamic contents, we do so.
-         * Otherwise as a fallback we just show an URL of the link.
-         */
         MC_NMHTMLURLW* nmhtmlurl = (MC_NMHTMLURLW*)hdr;
-        if (strcmp((char*)nmhtmlurl->pszUrl, "app:SayHello") == 0)
-        {
-            MessageBoxA(_window->m_handle, "Button Clicked", "Button Clicked!", MB_OK);
-        }
-        else if (strcmp((char*)nmhtmlurl->pszUrl, "app:CopyClipboardAvatar") == 0)
-        {
-            MC_HMCALLSCRIPTFUNC csfArgs;
-            WCHAR pszRetVal[128];
+        const string32_t value = string32Init((const char*)nmhtmlurl->pszUrl);
+        const uint64_t hash = string32Hash(&value);
 
-            csfArgs.cbSize = sizeof(MC_HMCALLSCRIPTFUNC);
-            csfArgs.pszRet = pszRetVal;
-            csfArgs.iRet = sizeof(pszRetVal) / sizeof(pszRetVal[0]);
-            csfArgs.cArgs = 1;
-            csfArgs.pszArg1 = L"avatar";
-            windowData_t* window = &k_windows->m_data[1];
-            SendMessageW(window->m_uiHandle, MC_HM_CALLSCRIPTFUNC, (WPARAM)L"getCopiedValue", (LPARAM)&csfArgs);
+        static const uint64_t appHelloHash = string32HashConst("app:SayHello");
+        static const uint64_t appCopyClipboardAvatar = string32HashConst("app:CopyClipboardAvatar");
 
-            appClipboardCopy(pszRetVal, wcsnlen_s(pszRetVal, 128));
-        }
-        else
+        switch (hash)
         {
-            MessageBoxW(_window->m_handle, nmhtmlurl->pszUrl, L"URL of the app link", MB_OK);
+            case appHelloHash:
+            {
+                MessageBoxA(_window->m_handle, "Button Clicked", "Button Clicked!", MB_OK);
+                break;
+            }
+            case appCopyClipboardAvatar:
+            {
+                MC_HMCALLSCRIPTFUNC csfArgs;
+                WCHAR pszRetVal[128];
+
+                csfArgs.cbSize = sizeof(MC_HMCALLSCRIPTFUNC);
+                csfArgs.pszRet = pszRetVal;
+                csfArgs.iRet = sizeof(pszRetVal) / sizeof(pszRetVal[0]);
+                csfArgs.cArgs = 1;
+                csfArgs.pszArg1 = L"avatar";
+                windowData_t* window = &k_windows->m_data[1];
+                SendMessageW(window->m_uiHandle, MC_HM_CALLSCRIPTFUNC, (WPARAM)L"getCopiedValue", (LPARAM)&csfArgs);
+
+                appClipboardCopy(pszRetVal, wcsnlen_s(pszRetVal, 128));
+                break;
+            }
+            default:
+                break;
         }
     }
 }
