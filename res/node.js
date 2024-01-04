@@ -13,7 +13,7 @@
         line.setAttribute("connectFrom", elem1.getAttribute("id"))
         line.setAttribute("connectTo", elem2.getAttribute("id"));
         line.style.position = "absolute";
-        line.style.borderTop = "1px solid black"; // Utiliser une bordure pour représenter la ligne
+        line.style.borderTop = "2px solid rgb(139, 139, 139)"; // Utiliser une bordure pour représenter la ligne
         
         var deltaX = x2 - x1;
         var deltaY = y2 - y1;
@@ -122,13 +122,16 @@
         circle.style.borderRadius = "50%";
         circle.style.width = width + "px";
         circle.style.height = height + "px";
-
+        circle.style.boxShadow = "rgba(0, 0, 0, 0.65) 2px 2px 2px, rgba(0, 0, 0, 0.23) 2px 2px 3px";
+        circle.style.cursor = "grab";
+        
         var modifier = (type === "in") ? 0 : 1;
         circle.style.left = (modifier * (parseInt(parentStyle.width))) - (width / 2) + "px";
         circle.style.top = parseInt(parentStyle.height)/2 - height/2 + "px";
-
+        
         circle.style.backgroundColor = "white"; // Couleur du cercle (vous pouvez ajuster selon vos besoins)
         circle.style.border = "1px solid rgb(139, 139, 139)";
+        circle.style.behavior = "url(./PIE.htc)";
         params.appendChild(circle);
         return circle;
     }
