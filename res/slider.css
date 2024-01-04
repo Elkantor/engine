@@ -1,32 +1,48 @@
 .slider-container {
     width: 200px;
     margin-top: 1em;
-  }
-
-  .slider-track {
-    width: 80%;
-    height: 5px;
-    background-color: #ddd;
-    position: relative;
     behavior: url(./PIE.htc);
   }
 
-  .slider-thumb {
-    width: 20px;
-    height: 20px;
-    background-color: #007BFF;
-    border-radius: 50%;
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
-    behavior: url(./PIE.htc);
-  }
+.slider-track {
+  width: 80%;
+  height: 5px;
+  background-color: #969696;
+  box-shadow: 3px 3px 5px 2px rgba(0, 0, 0, 0.2);
+  position: relative;
+  behavior: url(./PIE.htc);
+}
 
-  .slider-percentage {
-    position: relative;
-    top: 50%;
-    left: 90%; /* Ajuster la position à droite du slider */
-    transform: translateY(-50%);
-    behavior: url(./PIE.htc);
-  }
+.slider-thumb {
+  width: 20px;
+  height: 20px;
+  background-color: #333;
+  border: 1px solid #4e4e4e;
+  box-shadow: 3px 3px 5px 2px rgba(0, 0, 0, 0.2);
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  behavior: url(./PIE.htc);
+}
+
+.slider-thumb:hover {
+  border: 1px solid #969696;
+  behavior: url(./PIE.htc);
+}
+
+.slider-thumb:active {
+  border: 1px solid #969696;
+  behavior: url(./PIE.htc);
+}
+
+.slider-percentage {
+  position: relative;
+  top: 50%;
+  left: 90%; /* Ajuster la position à droite du slider */
+  transform: translateY(-50%);
+  font-weight: bold;
+  font-size: 12px;
+  behavior: url(./PIE.htc);
+}
