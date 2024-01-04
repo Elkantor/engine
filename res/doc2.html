@@ -9,8 +9,8 @@
     <link rel="stylesheet" href="button.css">
     <title>Tool</title>
   </head>
-  <body style="background-color: rgb(12, 13, 13); color:rgb(223, 223, 223); font-family: 'Open Sans', Helvetica;">
-    <button class="button" onclick='document.getElementById("SayHello").click();'>Button test</button>
+  <body style="background-color: rgb(12, 13, 13); color:rgb(223, 223, 223); font-family: 'Open Sans', Helvetica; overflow: auto;">
+    <button onclick='document.getElementById("SayHello").click();'>Button test</button>
     <a id="SayHello" href="app:SayHello" hidden></a>
     
     <div class="slider-container">
@@ -23,7 +23,7 @@
     
     <div id="div1" class="draggable node" style="top: 100px; left: 100px;"></div>
     <div id="div2" class="draggable node" style="top: 200px; left: 300px;"></div>
-
+    
     <label for="avatar" style="display: block; font: 1rem 'Fira Sans', sans-serif; margin: 0.4rem 0; behavior: url(./PIE.htc);">
       Choose a profile picture:
     </label>
@@ -36,6 +36,15 @@
     <br>
     <img id="image" src="" alt="Forest" style="border-radius: 4px; border: 1px solid #ddd; padding: 5px; width: 150px; height:150px; behavior: url(./PIE.htc);">
     
+    <br>
+    <button onclick="snackbar('this is a test')">Show Snackbar</button>
+    
+    <div id="snackbar">Some text some message..</div>
+  </body>
+
+  <!-- Snackbar -->
+  <link rel="stylesheet" href="snackbar.css">
+  <script src="snackbar.js"></script>
 
   <!-- Node -->
   <link rel="stylesheet" href="node.css">
