@@ -76,7 +76,7 @@ void windowDataDefaultSet(windowData_t* _win)
 	_win->m_width = 800;
 	_win->m_height = 600;
 	_win->m_displayIndex = 0;
-	_win->m_windowFeatures = WINDOW_FEATURE_RESIZEABLE | WINDOW_FEATURE_MINIMIZABLE | WINDOW_FEATURE_MAXIMIZABLE;
+	_win->m_windowFeatures = 0;
 	_win->m_mode = WINDOW_MODE_WINDOW;
 	_win->m_visible = true;
 	_win->m_graphicIndex = UINT32_MAX;

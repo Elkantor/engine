@@ -39,6 +39,7 @@ void windowNotify(windowData_t* _window, void* _data)
         const uint64_t hash = string32Hash(&value);
 
         static const uint64_t appHelloHash = string32HashConst("app:SayHello");
+        static const uint64_t appHUDClickedHash = string32HashConst("app:HUDClicked");
         static const uint64_t appCopyClipboardAvatar = string32HashConst("app:CopyClipboardAvatar");
 
         switch (hash)
@@ -46,6 +47,23 @@ void windowNotify(windowData_t* _window, void* _data)
             case appHelloHash:
             {
                 MessageBoxA(_window->m_handle, "Button Clicked", "Button Clicked!", MB_OK);
+                break;
+            }
+            case appHUDClickedHash:
+            {
+                MessageBoxA(_window->m_handle, "Button Clicked", "Button Clicked!", MB_OK);
+                SetFocus(k_windows->m_data[0].m_handle);
+
+                MC_HMCALLSCRIPTFUNC csfArgs;
+                WCHAR pszRetVal[128];
+
+                csfArgs.cbSize = sizeof(MC_HMCALLSCRIPTFUNC);
+                csfArgs.pszRet = pszRetVal;
+                csfArgs.iRet = sizeof(pszRetVal) / sizeof(pszRetVal[0]);
+                csfArgs.cArgs = 0;
+                windowData_t* window = &k_windows->m_data[2];
+                SendMessageW(window->m_uiHandle, MC_HM_CALLSCRIPTFUNC, (WPARAM)L"looseFocus", (LPARAM)&csfArgs);
+
                 break;
             }
             case appCopyClipboardAvatar:
@@ -112,7 +130,7 @@ void appUpdate(app_t* _app, globalContext_t* _global)
 
         BeginDrawing();
         {
-            ClearBackground(RAYWHITE);
+            ClearBackground(BLUE);
             BeginMode3D(_global->camera);
             {
                 DrawModel(_global->meshGround, Vector3Zero(), 1.0f, WHITE);
@@ -145,11 +163,15 @@ int appKickstart(int argc, char **argv)
     
     static windowArray_t windows;
     windowArrayInit(&app, &windows);
-    windowInit(&windows, 0, 1024, 768, "First Window", WINDOW_MODE_WINDOW, 0, NULL);
-    windowInit(&windows, 1, 600, 400, "Tool Window", WINDOW_MODE_WINDOW, WINDOW_FEATURE_HTML, NULL);
-
+    windowInit(&windows, 0, 1024, 768, "First Window", WINDOW_MODE_WINDOW, WINDOW_FEATURE_RESIZEABLE | WINDOW_FEATURE_MINIMIZABLE | WINDOW_FEATURE_MAXIMIZABLE, NULL);
+    
+    windowInit(&windows, 1, 600, 400, "Tool Window", WINDOW_MODE_WINDOW, WINDOW_FEATURE_HTML | WINDOW_FEATURE_RESIZEABLE | WINDOW_FEATURE_MINIMIZABLE | WINDOW_FEATURE_MAXIMIZABLE, NULL);
     const string32_t url = (string32_t){ .m_data = "\\res\\doc2.html", .m_size = 32 };
     windowHTMLAdd(&windows, 1, &url);
+
+    windowInit(&windows, 2, 100, 50, "Tool Window 2", WINDOW_MODE_FULLSCREEN_EXCLUSIVE, WINDOW_FEATURE_HTML | WINDOW_FEATURE_BORDERLESS | WINDOW_FEATURE_ON_TOP, NULL);
+    const string32_t url2 = (string32_t){ .m_data = "\\res\\HUD.html", .m_size = 32 };
+    windowHTMLAdd(&windows, 2, &url2);
 
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT | FLAG_BORDERLESS_WINDOWED_MODE | FLAG_WINDOW_UNDECORATED);
     InitWindow(800, 600, "Raylib Window");
@@ -187,6 +209,11 @@ int appKickstart(int argc, char **argv)
 
     const uint64_t stackSize = appStackSizeGet();
     printf("App stack size left: %zu\n", stackSize);
+
+    SetParent(windows.m_data[2].m_handle, windows.m_data[0].m_handle);
+    SetWindowPos(windows.m_data[2].m_handle, HWND_TOP, 100, 5, 30, 30, SWP_NOREPOSITION);
+    MARGINS margins = { -10, -10, -10, -10 };
+    DwmExtendFrameIntoClientArea(windows.m_data[2].m_handle, &margins);
 
     appStart(&app, &globalContext);
 

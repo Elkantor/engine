@@ -7,6 +7,7 @@
     
     <link rel="stylesheet" href="font-awesome.css">
     <link rel="stylesheet" href="button.css">
+
     <title>Tool</title>
   </head>
   <body style="background-color: rgb(12, 13, 13); color:rgb(223, 223, 223); font-family: 'Open Sans', Helvetica; overflow: auto;">
@@ -24,20 +25,25 @@
     <div id="div1" class="draggable node" style="top: 100px; left: 100px;"></div>
     <div id="div2" class="draggable node" style="top: 200px; left: 300px;"></div>
     
-    <label for="avatar" style="display: block; font: 1rem 'Fira Sans', sans-serif; margin: 0.4rem 0; behavior: url(./PIE.htc);">
-      Choose a profile picture:
-    </label>
-    <input onchange='document.getElementById("image").setAttribute("src", document.getElementById("avatar").value);' style="margin: 0.4rem 0; behavior: url(./PIE.htc);" type="file" id="avatar" name="avatar" accept="image/png, image/jpeg" />
-    <button onclick='document.getElementById("CopyClipboard").click()'>
-      <svg height="16" width="12" viewBox="0 0 384 512"><!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M192 0c-41.8 0-77.4 26.7-90.5 64H64C28.7 64 0 92.7 0 128V448c0 35.3 28.7 64 64 64H320c35.3 0 64-28.7 64-64V128c0-35.3-28.7-64-64-64H282.5C269.4 26.7 233.8 0 192 0zm0 64a32 32 0 1 1 0 64 32 32 0 1 1 0-64zM112 192H272c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16z"/></svg>
-    </button>
-    <a id="CopyClipboard" href="app:CopyClipboardAvatar" hidden></a>
-    
-    <br>
-    <img id="image" src="" alt="Forest" style="border-radius: 4px; border: 1px solid #ddd; padding: 5px; width: 150px; height:150px; behavior: url(./PIE.htc);">
+    <div style="border: 1px solid darkgrey; padding: 16px; display: inline-block;">
+      <div>Image:</div>
+      <br>
+      <img id="image" src="" alt="Forest" style="border-radius: 4px; border: 1px solid #ddd; padding: 5px; width: 75px; height:75px; behavior: url(./PIE.htc);">
+      <label for="avatar" style="font: 1rem 'Fira Sans', sans-serif; margin-bottom: 100px; behavior: url(./PIE.htc);"></label>
+      <input class="inputfile" onchange='document.getElementById("image").setAttribute("src", document.getElementById("avatar").value);' type="file" id="avatar" name="avatar" accept="image/png, image/jpeg" />
+      <button onclick='document.getElementById("CopyClipboard").click(); if (document.getElementById("avatar").value == "") return; snackbar("Path copied to clipboard");'>
+        <svg height="16" width="12" viewBox="0 0 384 512"><!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M192 0c-41.8 0-77.4 26.7-90.5 64H64C28.7 64 0 92.7 0 128V448c0 35.3 28.7 64 64 64H320c35.3 0 64-28.7 64-64V128c0-35.3-28.7-64-64-64H282.5C269.4 26.7 233.8 0 192 0zm0 64a32 32 0 1 1 0 64 32 32 0 1 1 0-64zM112 192H272c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16z"/></svg>
+      </button>
+      <a id="CopyClipboard" href="app:CopyClipboardAvatar" hidden></a>
+      <br>
+    </div>
     
     <br>
     <button onclick="snackbar('this is a test')">Show Snackbar</button>
+    
+    <iframe src="nodes.html"
+        title="GeeksforGeeks" width="400" height="300">
+    </iframe>
     
     <div id="snackbar">Some text some message..</div>
   </body>
@@ -47,8 +53,8 @@
   <script src="snackbar.js"></script>
 
   <!-- Node -->
-  <link rel="stylesheet" href="node.css">
-  <script src="node.js"></script>
+  <!-- <link rel="stylesheet" href="node.css">
+  <script src="node.js"></script> -->
 
   <!-- Slider -->
   <link rel="stylesheet" href="slider.css">
