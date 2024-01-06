@@ -12,5 +12,6 @@ typedef struct globalContext
     Vector3 cubePosition;
     Shader mainShader;
     Model meshGround;
+    Model meshCube;
     Light lights[12];
 } globalContext_t;

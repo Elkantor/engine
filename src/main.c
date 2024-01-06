@@ -88,6 +88,16 @@ void windowNotify(windowData_t* _window, void* _data)
     }
 }
 
+// Fonction pour extraire le vecteur de translation d'une matrice de transformation
+Vector3 extractTranslation(const Matrix* transformMatrix)
+{
+    Vector3 translation;
+    translation.x = transformMatrix->m12;
+    translation.y = transformMatrix->m13;
+    translation.z = transformMatrix->m14;
+    return translation;
+}
+
 void appUpdate(app_t* _app, globalContext_t* _global)
 {
     if (!WindowShouldClose() && _app->m_running)
@@ -108,9 +118,11 @@ void appUpdate(app_t* _app, globalContext_t* _global)
             csfArgs.cArgs = 1;
             windowData_t* window = &k_windows->m_data[1];
             SendMessageW(window->m_uiHandle, MC_HM_CALLSCRIPTFUNC, (WPARAM)L"updateSlider", (LPARAM)&csfArgs);
+        }
 
-            /*const int result = _wtoi(pszRetVal);
-            _global->camera.position.x += result;*/
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+        {
+            
         }
 
         if (IsKeyPressed('R')) _global->camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };
@@ -133,9 +145,8 @@ void appUpdate(app_t* _app, globalContext_t* _global)
             ClearBackground(BLUE);
             BeginMode3D(_global->camera);
             {
-                DrawModel(_global->meshGround, Vector3Zero(), 1.0f, WHITE);
-                DrawCube(_global->cubePosition, 2.0f, 2.0f, 2.0f, (Color) { 230, 41, 55, 255 });
-                DrawCubeWires(_global->cubePosition, 2.0f, 2.0f, 2.0f, MAROON);
+                DrawModel(_global->meshGround, Vector3Zero(), 1.f, WHITE);
+                DrawModel(_global->meshCube, extractTranslation(&_global->meshCube.transform), 1.0f, WHITE);
 
                 // Draw spheres to show where the lights are
                 for (int i = 0; i < MAX_LIGHTS; i++)
@@ -144,7 +155,7 @@ void appUpdate(app_t* _app, globalContext_t* _global)
                     else DrawSphereWires(_global->lights[i].position, 0.2f, 8, 8, ColorAlpha(_global->lights[i].color, 0.3f));
                 }
 
-                DrawGrid(10, 1.0f);
+                DrawGrid(100, 1.0f);
             }
             EndMode3D();
             DrawFPS(10, 10);
@@ -180,16 +191,30 @@ int appKickstart(int argc, char **argv)
         globalContext.camera.position = (Vector3){ 10.0f, 10.0f, 10.0f }; // Camera position
         globalContext.camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };      // Camera looking at point
         globalContext.camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
-        globalContext.camera.fovy = 45.0f;                                // Camera field-of-view Y
+        globalContext.camera.fovy = 60.0f;                                // Camera field-of-view Y
         globalContext.camera.projection = CAMERA_PERSPECTIVE;             // Camera projection type
 
         globalContext.mainShader = LoadShader("./src/lightning.vs", "./src/lightning.fs");
         globalContext.mainShader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(globalContext.mainShader, "viewPos");
         const int ambientLoc = GetShaderLocation(globalContext.mainShader, "ambient");
-        SetShaderValue(globalContext.mainShader, ambientLoc, (float[4]) { 0.1f, 0.1f, 0.1f, 1.0f }, SHADER_UNIFORM_VEC4);
+        SetShaderValue(globalContext.mainShader, ambientLoc, (float[4]) { 2.f, 2.f, 2.f, 1.0f }, SHADER_UNIFORM_VEC4);
 
-        globalContext.meshGround = LoadModelFromMesh(GenMeshPlane(10.0f, 10.0f, 3, 3));
+        globalContext.meshGround = LoadModelFromMesh(GenMeshCube(100.0f, 100.0f, 1.0f));
         globalContext.meshGround.materials[0].shader = globalContext.mainShader;
+        const float angle90 = 90.f * DEG2RAD;
+        globalContext.meshGround.transform = MatrixMultiply(globalContext.meshGround.transform, MatrixRotateX(angle90));
+        globalContext.meshGround.transform.m13 = -0.5f; // set y
+
+        globalContext.meshCube = LoadModelFromMesh(GenMeshCube(1.0f, 1.0f, 1.0f));
+        globalContext.meshCube.materials[0].shader = globalContext.mainShader;
+
+        {
+            Matrix matScale = MatrixScale(1.0f, 1.0f, 1.0f);
+            Matrix matRotation = MatrixRotate((Vector3){0.f, 0.f, 0.f}, 0.f);
+            Matrix matTranslation = MatrixTranslate(0.f, 0.25f, 0.0f);
+            Matrix matTransform = MatrixMultiply(MatrixMultiply(matScale, matRotation), matTranslation);
+            globalContext.meshCube.transform = matTransform;
+        }
 
         globalContext.lights[0] = CreateLight(LIGHT_POINT, (Vector3) { -2, 1, -2 }, Vector3Zero(), YELLOW, globalContext.mainShader);
         globalContext.lights[1] = CreateLight(LIGHT_POINT, (Vector3) { 2, 1, 2 }, Vector3Zero(), RED, globalContext.mainShader);

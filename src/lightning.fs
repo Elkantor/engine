@@ -32,10 +32,21 @@ uniform Light lights[MAX_LIGHTS];
 uniform vec4 ambient;
 uniform vec3 viewPos;
 
+float checker(vec2 uv, float repeats)
+{
+  float cx = floor(repeats * uv.x);
+  float cy = floor(repeats * uv.y); 
+  float result = mod(cx + cy, 2.0);
+  return sign(result);
+}
+
 void main()
 {
     // Texel color fetching from texture sampler
     vec4 texelColor = texture(texture0, fragTexCoord);
+    float check = checker( vec2(fragTexCoord.x, fragTexCoord.y), 10.f);
+    float gray = mix(0.8, 1.0, check);
+    texelColor *= vec4(gray, gray, gray, 1.0f);
     vec3 lightDot = vec3(0.0);
     vec3 normal = normalize(fragNormal);
     vec3 viewD = normalize(viewPos - fragPosition);
@@ -72,5 +83,5 @@ void main()
     finalColor += texelColor*(ambient/10.0)*colDiffuse;
 
     // Gamma correction
-    finalColor = pow(finalColor, vec4(1.0/2.2));
+    finalColor = pow(finalColor, vec4(1.0/2.4));
 }
