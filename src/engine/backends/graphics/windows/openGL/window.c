@@ -183,24 +183,3 @@ void internalGLContextInit(windowArray_t* _windows, const uint32_t _windowIndex,
 	glBindVertexArray(firstGraphic->m_vertexArray);
 	assert(glDebugErrorCheck() == false);
 }
-
-void windowGraphicsInit(windowArray_t* _windows, const uint32_t _windowIndex, graphicsArray_t* _graphics, const uint32_t _graphicIndex)
-{
-    assert(_windows->m_data[_windowIndex].m_graphicIndex == UINT32_MAX);
-    assert(_windows->m_data[_windowIndex].m_handle != NULL);
-    
-    windowData_t* window = &_windows->m_data[_windowIndex];
-
-    const int depthBits = window->m_frameBufferOptions.m_depthBits;
-    const int stencilBits = window->m_frameBufferOptions.m_stencilBits;
-
-    internalGLContextInit(_windows, _windowIndex, _graphics, _graphicIndex, depthBits, stencilBits);
-
-    if (wglSwapIntervalEXT != NULL)
-    {
-        wglSwapIntervalEXT(_windows->m_data[_windowIndex].m_frameBufferOptions.m_verticalSync);
-    }
-
-    int maxColorAttachments = 8;
-    glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxColorAttachments);
-}

@@ -187,6 +187,7 @@ int appKickstart(int argc, char **argv)
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT | FLAG_BORDERLESS_WINDOWED_MODE | FLAG_WINDOW_UNDECORATED);
     InitWindow(800, 600, "Raylib Window");
 
+    // Initialize global context
     {
         globalContext.camera.position = (Vector3){ 10.0f, 10.0f, 10.0f }; // Camera position
         globalContext.camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };      // Camera looking at point
