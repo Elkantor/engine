@@ -31,6 +31,7 @@ struct Light {
 uniform Light lights[MAX_LIGHTS];
 uniform vec4 ambient;
 uniform vec3 viewPos;
+uniform float gamma;
 
 float checker(vec2 uv, float repeats)
 {
@@ -45,7 +46,7 @@ void main()
     // Texel color fetching from texture sampler
     vec4 texelColor = texture(texture0, fragTexCoord);
     float check = checker( vec2(fragTexCoord.x, fragTexCoord.y), 10.f);
-    float gray = mix(0.8, 1.0, check);
+    float gray = mix(0.9, 1.0, check);
     texelColor *= vec4(gray, gray, gray, 1.0f);
     vec3 lightDot = vec3(0.0);
     vec3 normal = normalize(fragNormal);
@@ -74,7 +75,7 @@ void main()
             lightDot += lights[i].color.rgb*NdotL;
 
             float specCo = 0.0;
-            if (NdotL > 0.0) specCo = pow(max(0.0, dot(viewD, reflect(-(light), normal))), 16.0); // 16 refers to shine
+            if (NdotL > 0.0) specCo = pow(max(0.0, dot(viewD, reflect(-(light), normal))), 32); // 16 refers to shine
             specular += specCo;
         }
     }
@@ -83,5 +84,5 @@ void main()
     finalColor += texelColor*(ambient/10.0)*colDiffuse;
 
     // Gamma correction
-    finalColor = pow(finalColor, vec4(1.0/2.4));
+    finalColor = pow(finalColor, vec4(1.0/gamma));
 }
