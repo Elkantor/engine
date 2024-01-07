@@ -11,7 +11,12 @@ typedef struct globalContext
     Camera3D camera;
     Vector3 cubePosition;
     Shader mainShader;
+    Shader outlineShader;
+    RenderTexture renderTexture;
     Model meshGround;
     Model meshCube;
     Light lights[12];
+
+    float m_gamma;
+    int m_outlineSize;
 } globalContext_t;
