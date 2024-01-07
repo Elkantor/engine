@@ -41,12 +41,32 @@ void windowNotify(windowData_t* _window, void* _data)
         static const uint64_t appHelloHash = string32HashConst("app:SayHello");
         static const uint64_t appHUDClickedHash = string32HashConst("app:HUDClicked");
         static const uint64_t appCopyClipboardAvatar = string32HashConst("app:CopyClipboardAvatar");
+        static const uint64_t appGamma = string32HashConst("app:gamma");
 
         switch (hash)
         {
             case appHelloHash:
             {
                 MessageBoxA(_window->m_handle, "Button Clicked", "Button Clicked!", MB_OK);
+                break;
+            }
+            case appGamma:
+            {
+                WCHAR pszRetVal[128];
+
+                MC_HMCALLSCRIPTFUNC csfArgs =
+                {
+                    .cbSize = sizeof(MC_HMCALLSCRIPTFUNC),
+                    .pszRet = pszRetVal,
+                    .iRet = sizeof(pszRetVal) / sizeof(pszRetVal[0]),
+                    .cArgs = 0,
+                };
+                windowData_t* window = &k_windows->m_data[1];
+                SendMessageW(window->m_uiHandle, MC_HM_CALLSCRIPTFUNC, (WPARAM)L"gammaUpdate", (LPARAM)&csfArgs);
+
+                globalContext.m_gamma = _wtof(pszRetVal);
+                const int gammaLoc = GetShaderLocation(globalContext.mainShader, "gamma");
+                SetShaderValue(globalContext.mainShader, gammaLoc, &globalContext.m_gamma, SHADER_UNIFORM_FLOAT);
                 break;
             }
             case appHUDClickedHash:
@@ -120,11 +140,6 @@ void appUpdate(app_t* _app, globalContext_t* _global)
             SendMessageW(window->m_uiHandle, MC_HM_CALLSCRIPTFUNC, (WPARAM)L"updateSlider", (LPARAM)&csfArgs);
         }
 
-        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-        {
-            
-        }
-
         if (IsKeyPressed('R')) _global->camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };
 
         // Update the shader with the camera view vector (points towards { 0.0f, 0.0f, 0.0f })
@@ -142,11 +157,15 @@ void appUpdate(app_t* _app, globalContext_t* _global)
 
         BeginDrawing();
         {
-            ClearBackground(BLUE);
+            ClearBackground(DARKGRAY);
+
             BeginMode3D(_global->camera);
             {
+                DrawGrid(100, 1.0f);
                 DrawModel(_global->meshGround, Vector3Zero(), 1.f, WHITE);
-                DrawModel(_global->meshCube, extractTranslation(&_global->meshCube.transform), 1.0f, WHITE);
+
+                Vector3 pos = extractTranslation(&_global->meshCube.transform);
+                DrawModel(_global->meshCube, pos, 1.0f, WHITE);
 
                 // Draw spheres to show where the lights are
                 for (int i = 0; i < MAX_LIGHTS; i++)
@@ -155,9 +174,30 @@ void appUpdate(app_t* _app, globalContext_t* _global)
                     else DrawSphereWires(_global->lights[i].position, 0.2f, 8, 8, ColorAlpha(_global->lights[i].color, 0.3f));
                 }
 
-                DrawGrid(100, 1.0f);
             }
             EndMode3D();
+
+            // Draw black silhouettes to texture
+            //----------------------------------------------------------------------------------
+            BeginTextureMode(_global->renderTexture);
+                ClearBackground(WHITE);
+                BeginMode3D(_global->camera);
+                    Vector3 pos = extractTranslation(&_global->meshCube.transform);
+                    Shader savedTmp = globalContext.meshCube.materials[0].shader;
+                    globalContext.meshCube.materials[0].shader.id = rlGetShaderIdDefault();
+                    globalContext.meshCube.materials[0].shader.locs = rlGetShaderLocsDefault();
+                    DrawModel(_global->meshCube, pos, 1.0f, BLACK);
+                    globalContext.meshCube.materials[0].shader = savedTmp;
+                EndMode3D();
+            EndTextureMode();
+
+            // Draw outline
+            //----------------------------------------------------------------------------------
+            BeginShaderMode(_global->outlineShader);
+                const RL_Rectangle rec = { 0, 0, (float)_global->renderTexture.texture.width, (float)-_global->renderTexture.texture.height };
+                DrawTextureRec(_global->renderTexture.texture, rec, (Vector2){ 0, 0 }, WHITE);
+            EndShaderMode();
+
             DrawFPS(10, 10);
         }
         EndDrawing();
@@ -197,8 +237,25 @@ int appKickstart(int argc, char **argv)
 
         globalContext.mainShader = LoadShader("./src/lightning.vs", "./src/lightning.fs");
         globalContext.mainShader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(globalContext.mainShader, "viewPos");
+
+        globalContext.m_outlineSize = 2;
+        globalContext.outlineShader = LoadShader(0, "./src/outline.fs");
+        const int screenWidth = GetScreenWidth();
+        const int screenHeight = GetScreenHeight();
+        const float outlineColor[4] = { 1, 0.63, 0, 1 }; // Orange
+        SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "width"), &screenWidth, SHADER_UNIFORM_INT);
+        SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "height"), &screenHeight, SHADER_UNIFORM_INT);
+        SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "color"), outlineColor, SHADER_UNIFORM_VEC4);
+        SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "size"), &globalContext.m_outlineSize, SHADER_UNIFORM_INT);
+        globalContext.renderTexture = LoadRenderTexture(screenWidth, screenHeight);
+
+
         const int ambientLoc = GetShaderLocation(globalContext.mainShader, "ambient");
         SetShaderValue(globalContext.mainShader, ambientLoc, (float[4]) { 2.f, 2.f, 2.f, 1.0f }, SHADER_UNIFORM_VEC4);
+
+        globalContext.m_gamma = 2.2f;
+        const int gammaLoc = GetShaderLocation(globalContext.mainShader, "gamma");
+        SetShaderValue(globalContext.mainShader, gammaLoc, &globalContext.m_gamma, SHADER_UNIFORM_FLOAT);
 
         globalContext.meshGround = LoadModelFromMesh(GenMeshCube(100.0f, 100.0f, 1.0f));
         globalContext.meshGround.materials[0].shader = globalContext.mainShader;
