@@ -2,6 +2,7 @@
 
 // Raylib
 #include "../libs/raylib/raylib.h"
+#include "../libs/raylib/rlgl.h"
 #include "../libs/raylib/raymath.h"
 
 // Include global context struct
