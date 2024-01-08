@@ -10,11 +10,19 @@ typedef struct globalContext
 {
     Camera3D camera;
     Vector3 cubePosition;
+
+    Ray ray;
+    RayCollision rayCollision;
+
     Shader mainShader;
     Shader outlineShader;
     RenderTexture renderTexture;
     Model meshGround;
     Model meshCube;
+
+    Model churchMesh;
+    Texture2D churchTextureDiffuse;
+
     Light lights[12];
 
     float m_gamma;

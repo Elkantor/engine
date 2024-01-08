@@ -16,7 +16,33 @@ static globalContext_t globalContext = { 0 };
 
 void windowResize(windowData_t* _window, const int _width, const int _height)
 {
-    
+    if (_window->m_handle == k_windows->m_data[0].m_handle)
+    {
+        const int mainWindowWith = _width;
+        
+        // Set property window size
+        if (k_windows->m_data[1].m_handle != NULL)
+        {
+            const int propertyWindowWidth = mainWindowWith * 0.3f;
+            const int propertyWindowX = mainWindowWith * 0.7f;
+            SetWindowPos(k_windows->m_data[1].m_handle, HWND_TOP, propertyWindowX, 0, propertyWindowWidth, _height, SWP_DRAWFRAME);
+        }
+
+        // Set raylib viewport size
+        if (GetWindowHandle() != NULL)
+        {
+            const int raylibWindowWidth = mainWindowWith * 0.7f;
+            SetWindowPos(GetWindowHandle(), HWND_TOP, 0, 0, raylibWindowWidth, _height, SWP_DRAWFRAME);
+            SetWindowSize(raylibWindowWidth, _height);
+            
+            UnloadRenderTexture(globalContext.renderTexture);
+            globalContext.renderTexture = LoadRenderTexture(raylibWindowWidth, _height);
+            const int screenWidth = raylibWindowWidth;
+            const int screenHeight = _height;
+            SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "width"), &screenWidth, SHADER_UNIFORM_INT);
+            SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "height"), &screenHeight, SHADER_UNIFORM_INT);
+        }
+    }
 }
 
 void windowFocus(windowData_t* _window)
@@ -103,18 +129,20 @@ void windowNotify(windowData_t* _window, void* _data)
                 break;
             }
             default:
+            {
+                SetFocus(k_windows->m_data[0].m_handle);
                 break;
+            }
         }
     }
 }
 
-// Fonction pour extraire le vecteur de translation d'une matrice de transformation
-Vector3 extractTranslation(const Matrix* transformMatrix)
+Vector3 extractTranslation(const Matrix* _transformMatrix)
 {
     Vector3 translation;
-    translation.x = transformMatrix->m12;
-    translation.y = transformMatrix->m13;
-    translation.z = transformMatrix->m14;
+    translation.x = _transformMatrix->m12;
+    translation.y = _transformMatrix->m13;
+    translation.z = _transformMatrix->m14;
     return translation;
 }
 
@@ -155,14 +183,32 @@ void appUpdate(app_t* _app, globalContext_t* _global)
         // Update light values (actually, only enable/disable them)
         for (int i = 0; i < MAX_LIGHTS; i++) UpdateLightValues(_global->mainShader, _global->lights[i]);
 
+        Color colorPicked = WHITE;
+        if (IsMouseButtonPressed(MOUSE_BUTTON_MIDDLE))
+        {
+            Image image = LoadImageFromTexture(_global->renderTexture.texture);
+            colorPicked = GetImageColor(image, GetMouseX(), image.height - GetMouseY()); // Need to reverse image on Y axis
+
+            if (ExportImage(image, "./image.png"))
+            {
+                printf("Exported\n");
+            }
+
+            const float pickingColor[4] = { (float)colorPicked.r / 255.f, (float)colorPicked.g / 255.f, (float)colorPicked.b / 255.f, (float)colorPicked.a / 255.f };
+            SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "pickingColor"), &pickingColor, SHADER_UNIFORM_VEC4);
+            UnloadImage(image);
+        }
+
         BeginDrawing();
         {
             ClearBackground(DARKGRAY);
 
             BeginMode3D(_global->camera);
             {
-                DrawGrid(100, 1.0f);
-                DrawModel(_global->meshGround, Vector3Zero(), 1.f, WHITE);
+                //DrawGrid(100, 1.0f);
+                DrawModel(_global->meshGround, Vector3Zero(), 1.f, (Color) { 20, 20, 20, 255 });
+
+                DrawModel(_global->churchMesh, (Vector3) { 4, 0.f, 2 }, 0.2f, WHITE);
 
                 Vector3 pos = extractTranslation(&_global->meshCube.transform);
                 DrawModel(_global->meshCube, pos, 1.0f, WHITE);
@@ -177,17 +223,26 @@ void appUpdate(app_t* _app, globalContext_t* _global)
             }
             EndMode3D();
 
-            // Draw black silhouettes to texture
+            // Draw color picking color id silhouettes to texture
             //----------------------------------------------------------------------------------
             BeginTextureMode(_global->renderTexture);
                 ClearBackground(WHITE);
                 BeginMode3D(_global->camera);
+                    Shader savedTmp = _global->meshCube.materials[0].shader;
+                    const uint32_t savedTextureID = _global->churchMesh.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture.id;
+
+                    _global->churchMesh.materials[0].shader.id = rlGetShaderIdDefault();
+                    _global->churchMesh.materials[0].shader.locs = rlGetShaderLocsDefault();
+                    const uint32_t churchMeshID = 1;
+                    globalContext.churchMesh.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture.id = rlGetTextureIdDefault();
+                    DrawModel(_global->churchMesh, (Vector3) { 4, 0.0f, 2 }, 0.2f, GetColor(churchMeshID));
+
                     Vector3 pos = extractTranslation(&_global->meshCube.transform);
-                    Shader savedTmp = globalContext.meshCube.materials[0].shader;
-                    globalContext.meshCube.materials[0].shader.id = rlGetShaderIdDefault();
-                    globalContext.meshCube.materials[0].shader.locs = rlGetShaderLocsDefault();
-                    DrawModel(_global->meshCube, pos, 1.0f, BLACK);
-                    globalContext.meshCube.materials[0].shader = savedTmp;
+                    _global->meshCube.materials[0].shader.id = rlGetShaderIdDefault();
+                    _global->meshCube.materials[0].shader.locs = rlGetShaderLocsDefault();
+                    const uint32_t cubeMeshID = 2;
+                    DrawModel(_global->meshCube, pos, 1.0f, GetColor(cubeMeshID));
+                    
                 EndMode3D();
             EndTextureMode();
 
@@ -199,6 +254,9 @@ void appUpdate(app_t* _app, globalContext_t* _global)
             EndShaderMode();
 
             DrawFPS(10, 10);
+            _global->churchMesh.materials[0].shader = savedTmp;
+            _global->churchMesh.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture.id = savedTextureID;
+            _global->meshCube.materials[0].shader = savedTmp;
         }
         EndDrawing();
     }
@@ -214,18 +272,27 @@ int appKickstart(int argc, char **argv)
     
     static windowArray_t windows;
     windowArrayInit(&app, &windows);
-    windowInit(&windows, 0, 1024, 768, "First Window", WINDOW_MODE_WINDOW, WINDOW_FEATURE_RESIZEABLE | WINDOW_FEATURE_MINIMIZABLE | WINDOW_FEATURE_MAXIMIZABLE, NULL);
+    windowInit(&windows, 0, 1280, 720, "First Window", WINDOW_MODE_WINDOW, WINDOW_FEATURE_RESIZEABLE | WINDOW_FEATURE_MINIMIZABLE | WINDOW_FEATURE_MAXIMIZABLE, NULL);
     
-    windowInit(&windows, 1, 600, 400, "Tool Window", WINDOW_MODE_WINDOW, WINDOW_FEATURE_HTML | WINDOW_FEATURE_RESIZEABLE | WINDOW_FEATURE_MINIMIZABLE | WINDOW_FEATURE_MAXIMIZABLE, NULL);
+    windowInit(&windows, 1, 1280.f * 0.3f, 720, "Tool Window", WINDOW_MODE_WINDOW, WINDOW_FEATURE_HTML | WINDOW_FEATURE_RESIZEABLE | WINDOW_FEATURE_MINIMIZABLE | WINDOW_FEATURE_MAXIMIZABLE | WINDOW_FEATURE_BORDERLESS, NULL);
     const string32_t url = (string32_t){ .m_data = "\\res\\doc2.html", .m_size = 32 };
     windowHTMLAdd(&windows, 1, &url);
+    // Make 2nd window a child from 1st one
+    {
+        SetParent(windows.m_data[1].m_handle, windows.m_data[0].m_handle);
+        const LONG nNewStyle = (GetWindowLong(windows.m_data[1].m_handle, GWL_STYLE) & ~WS_POPUP) | WS_CHILDWINDOW;
+        SetWindowLong(windows.m_data[1].m_handle, GWL_STYLE, nNewStyle);
+        const ULONG_PTR cNewStyle = GetClassLongPtr(windows.m_data[1].m_handle, GCL_STYLE) | CS_DBLCLKS;
+        SetClassLongPtr(windows.m_data[1].m_handle, GCL_STYLE, cNewStyle);
+        SetWindowPos(windows.m_data[1].m_handle, HWND_TOP, 1280.f * 0.7f, 0, 1280.f * 0.3f, 720, SWP_DRAWFRAME);
+    }
 
     windowInit(&windows, 2, 100, 50, "Tool Window 2", WINDOW_MODE_FULLSCREEN_EXCLUSIVE, WINDOW_FEATURE_HTML | WINDOW_FEATURE_BORDERLESS | WINDOW_FEATURE_ON_TOP, NULL);
     const string32_t url2 = (string32_t){ .m_data = "\\res\\HUD.html", .m_size = 32 };
     windowHTMLAdd(&windows, 2, &url2);
 
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT | FLAG_BORDERLESS_WINDOWED_MODE | FLAG_WINDOW_UNDECORATED);
-    InitWindow(800, 600, "Raylib Window");
+    InitWindow(1280.f * 0.7f, 720, "Raylib Window");
 
     // Initialize global context
     {
@@ -243,9 +310,11 @@ int appKickstart(int argc, char **argv)
         const int screenWidth = GetScreenWidth();
         const int screenHeight = GetScreenHeight();
         const float outlineColor[4] = { 1, 0.63, 0, 1 }; // Orange
+        const float pickingColor[4] = { BLACK.r/255, BLACK.g/255, BLACK.b/255, BLACK.a/255 };
         SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "width"), &screenWidth, SHADER_UNIFORM_INT);
         SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "height"), &screenHeight, SHADER_UNIFORM_INT);
         SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "color"), outlineColor, SHADER_UNIFORM_VEC4);
+        SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "pickingColor"), pickingColor, SHADER_UNIFORM_VEC4);
         SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "size"), &globalContext.m_outlineSize, SHADER_UNIFORM_INT);
         globalContext.renderTexture = LoadRenderTexture(screenWidth, screenHeight);
 
@@ -265,6 +334,11 @@ int appKickstart(int argc, char **argv)
 
         globalContext.meshCube = LoadModelFromMesh(GenMeshCube(1.0f, 1.0f, 1.0f));
         globalContext.meshCube.materials[0].shader = globalContext.mainShader;
+
+        globalContext.churchMesh = LoadModel("./res/models/church/churchMesh.obj");
+        globalContext.churchTextureDiffuse = LoadTexture("./res/models/church/churchTextureDiffuse.png");
+        globalContext.churchMesh.materials[0].shader = globalContext.mainShader;
+        globalContext.churchMesh.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = globalContext.churchTextureDiffuse;
 
         {
             Matrix matScale = MatrixScale(1.0f, 1.0f, 1.0f);
@@ -287,7 +361,7 @@ int appKickstart(int argc, char **argv)
         SetWindowLong(GetWindowHandle(), GWL_STYLE, nNewStyle);
         const ULONG_PTR cNewStyle = GetClassLongPtr(GetWindowHandle(), GCL_STYLE) | CS_DBLCLKS;
         SetClassLongPtr(GetWindowHandle(), GCL_STYLE, cNewStyle);
-        SetWindowPos(GetWindowHandle(), HWND_TOP, 0, 0, 800, 600, SWP_DRAWFRAME);
+        SetWindowPosition(0, 0);
     }
 
     const uint64_t stackSize = appStackSizeGet();
