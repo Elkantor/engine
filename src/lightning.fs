@@ -45,9 +45,15 @@ void main()
 {
     // Texel color fetching from texture sampler
     vec4 texelColor = texture(texture0, fragTexCoord);
-    float check = checker( vec2(fragTexCoord.x, fragTexCoord.y), 10.f);
-    float gray = mix(0.9, 1.0, check);
-    texelColor *= vec4(gray, gray, gray, 1.0f);
+
+    // Apply checker gray only on fully white meshes
+    if (texture(texture0, fragTexCoord).rgb == vec3(1.0) && colDiffuse == vec4(1.f))
+    {
+        float check = checker( vec2(fragTexCoord.x, fragTexCoord.y), 10.f);
+        float gray = mix(0.2, 1.0, check);
+        texelColor *= vec4(gray, gray, gray, 1.0f);
+    }
+
     vec3 lightDot = vec3(0.0);
     vec3 normal = normalize(fragNormal);
     vec3 viewD = normalize(viewPos - fragPosition);
