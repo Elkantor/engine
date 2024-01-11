@@ -190,15 +190,18 @@ void appUpdate(app_t* _app, globalContext_t* _global)
             image.format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
 
             colorPicked = GetImageColor(image, GetMouseX(), image.height - GetMouseY()); // Need to reverse image on Y axis
-            const float pickingColor[4] = { (float)colorPicked.r / 255.f, (float)colorPicked.g / 255.f, (float)colorPicked.b / 255.f, (float)colorPicked.a / 255.f };
-            SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "pickingColor"), &pickingColor, SHADER_UNIFORM_VEC4);
+            const float pickingColor[4] = { (float)colorPicked.r, (float)colorPicked.g, (float)colorPicked.b, (float)colorPicked.a };
+            const uint16_t id = convertFloat3ArrayToUint16(pickingColor);
 
-            const int meshOffset = ColorToInt(colorPicked);
-            printf("meshOffset: %d\n", meshOffset);
-            const uintptr_t globalContextAddress = (uintptr_t)&_global->camera;
-            printf("Address globalContext: %llu\n", globalContextAddress);
-            /*Model* meshSelected = (Model*)(globalContextAddress + meshOffset);
-            printf("mesh x: %d", meshSelected->transform.m12);*/
+            const float pickingColorNorm[4] = { (float)colorPicked.r / 255.f, (float)colorPicked.g / 255.f, (float)colorPicked.b / 255.f, (float)colorPicked.a / 255.f };
+            SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "pickingColor"), &pickingColorNorm, SHADER_UNIFORM_VEC4);
+            
+            if (colorPicked.r != WHITE.r && colorPicked.g != WHITE.g && colorPicked.b != WHITE.b)
+            {
+                const uintptr_t addressMesh = (uintptr_t)&globalContext + id;
+                Model* meshSelected = (Model*)(addressMesh);
+                printf("mesh x: %d", meshSelected->transform.m12);
+            }
         }
 
         BeginDrawing();
@@ -206,14 +209,17 @@ void appUpdate(app_t* _app, globalContext_t* _global)
             ClearBackground(DARKGRAY);
             BeginMode3D(_global->camera);
             {
-                //DrawGrid(100, 1.0f);
                 DrawModel(_global->meshGround, Vector3Zero(), 1.f, (Color) { 20, 20, 20, 255 });
 
-                DrawModel(_global->churchMesh, (Vector3) { 4, 0.f, 2 }, 0.2f, WHITE);
+                // Church
+                {
+                    const Vector3 pos = extractTranslation(&_global->meshCube.transform);
+                    DrawModel(_global->churchMesh, pos, 0.2f, WHITE);
+                }
 
                 // Cube
                 {
-                    Vector3 pos = extractTranslation(&_global->meshCube.transform);
+                    const Vector3 pos = extractTranslation(&_global->meshCube.transform);
                     DrawModel(_global->meshCube, pos, 1.0f, WHITE);
                 }
 
@@ -232,20 +238,33 @@ void appUpdate(app_t* _app, globalContext_t* _global)
             }
             EndMode3D();
 
-            // Draw color picking color id silhouettes to texture
+            // Draw color picking id silhouettes to texture
             //----------------------------------------------------------------------------------
             BeginTextureMode(_global->renderTexture);
                 ClearBackground(WHITE);
                     BeginMode3D(_global->camera);
 
-                    const float red[] = { 1.0f, 0.f, 0.f, 1.0f };
-                    SetShaderValue(_global->materialFlatColor.shader, _global->shaderFlatColorLoc, &red, SHADER_UNIFORM_VEC4);
-                    DrawModelMat(_global->churchMesh, (Vector3) { 4, 0.0f, 2 }, 0.2f, WHITE, &_global->materialFlatColor);
+                    // Church mesh
+                    {
+                        static const uint16_t churchID = offsetof(globalContext_t, churchMesh);
+                        static float color[4] = { 0, [3] = 1.f };
+                        convertUint16ToFloat3Array(churchID, color);
+                        color[0] /= 255.f; color[1] /= 255.f; color[2] /= 255.f;
+                        SetShaderValue(_global->materialFlatColor.shader, _global->shaderFlatColorLoc, &color, SHADER_UNIFORM_VEC4);
+                        const Vector3 pos = extractTranslation(&_global->meshCube.transform);
+                        DrawModelMat(_global->churchMesh, pos, 0.2f, WHITE, & _global->materialFlatColor);
+                    }
 
-                    Vector3 pos = extractTranslation(&_global->meshCube.transform);
-                    const float blue[] = { 0.f, 0.f, 1.f, 1.f };
-                    SetShaderValue(_global->materialFlatColor.shader, _global->shaderFlatColorLoc, &blue, SHADER_UNIFORM_VEC4);
-                    DrawModelMat(_global->meshCube, pos, 1.0f, (Color) { 0, 0, 255, 255 }, &_global->materialFlatColor);
+                    // Cube mesh
+                    {
+                        static const uint16_t cubeID = offsetof(globalContext_t, meshCube);
+                        static float color[4] = { 0, [3] = 1.f };
+                        convertUint16ToFloat3Array(cubeID, color);
+                        color[0] /= 255.f; color[1] /= 255.f; color[2] /= 255.f;
+                        SetShaderValue(_global->materialFlatColor.shader, _global->shaderFlatColorLoc, &color, SHADER_UNIFORM_VEC4);
+                        const Vector3 pos = extractTranslation(&_global->meshCube.transform);
+                        DrawModelMat(_global->meshCube, pos, 1.0f, WHITE, &_global->materialFlatColor);
+                    }
                 EndMode3D();
             EndTextureMode();
 
@@ -353,6 +372,8 @@ int appKickstart(int argc, char **argv)
         globalContext.churchTextureDiffuse = LoadTexture("./res/models/church/churchTextureDiffuse.png");
         globalContext.churchMesh.materials[0].shader = globalContext.mainShader;
         globalContext.churchMesh.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = globalContext.churchTextureDiffuse;
+        globalContext.churchMesh.transform.m12 = 15.f;
+        globalContext.churchMesh.transform.m14 = 5.f;
 
         {
             Matrix matScale = MatrixScale(1.0f, 1.0f, 1.0f);

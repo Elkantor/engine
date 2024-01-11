@@ -13,6 +13,9 @@
 #include "engine/backends/system/windows/display.c"
 #include "engine/backends/system/windows/system.c"
 
+// Other non-plateform specific 
+#include "engine/utils/convert.c"
+
 // Mctrl
 #include <commctrl.h> // needs windows.h defined in system.c
 #include <wchar.h>
