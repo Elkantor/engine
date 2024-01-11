@@ -11,14 +11,16 @@ typedef struct globalContext
     Camera3D camera;
     Vector3 cubePosition;
 
-    Ray ray;
-    RayCollision rayCollision;
-
     Shader mainShader;
     Shader outlineShader;
+    Material materialFlatColor;
+    uint32_t shaderFlatColorLoc;
+
     RenderTexture renderTexture;
     Model meshGround;
     Model meshCube;
+    Model meshGizmoArrowCone;
+    Model meshGizmoArrowCylinder;
 
     Model churchMesh;
     Texture2D churchTextureDiffuse;

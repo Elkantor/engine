@@ -11,7 +11,7 @@ static globalContext_t globalContext = { 0 };
 // devenv a.exe (to open visual studio debugger)
 
 // NOTE(Victor): build with zig cc (clang) compiler on windows:
-// zig cc src/main.c -g -Wall -Werror -lmCtrl -lcomctl32 -lDwmapi -lwinmm -lgdi32 -lopengl32 -lraylib -L./libs/raylib -L./libs/mctrl
+// zig cc src/main.c -gcodeview -g -Wall -Werror -lmCtrl -lcomctl32 -lDwmapi -lwinmm -lgdi32 -lopengl32 -lraylib -L./libs/raylib -L./libs/mctrl
 // devenv a.exe (to open visual studio debugger)
 
 void windowResize(windowData_t* _window, const int _width, const int _height)
@@ -187,22 +187,23 @@ void appUpdate(app_t* _app, globalContext_t* _global)
         if (IsMouseButtonPressed(MOUSE_BUTTON_MIDDLE))
         {
             Image image = LoadImageFromTexture(_global->renderTexture.texture);
+            image.format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
+
             colorPicked = GetImageColor(image, GetMouseX(), image.height - GetMouseY()); // Need to reverse image on Y axis
-
-            if (ExportImage(image, "./image.png"))
-            {
-                printf("Exported\n");
-            }
-
             const float pickingColor[4] = { (float)colorPicked.r / 255.f, (float)colorPicked.g / 255.f, (float)colorPicked.b / 255.f, (float)colorPicked.a / 255.f };
             SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "pickingColor"), &pickingColor, SHADER_UNIFORM_VEC4);
-            UnloadImage(image);
+
+            const int meshOffset = ColorToInt(colorPicked);
+            printf("meshOffset: %d\n", meshOffset);
+            const uintptr_t globalContextAddress = (uintptr_t)&_global->camera;
+            printf("Address globalContext: %llu\n", globalContextAddress);
+            /*Model* meshSelected = (Model*)(globalContextAddress + meshOffset);
+            printf("mesh x: %d", meshSelected->transform.m12);*/
         }
 
         BeginDrawing();
         {
             ClearBackground(DARKGRAY);
-
             BeginMode3D(_global->camera);
             {
                 //DrawGrid(100, 1.0f);
@@ -210,8 +211,17 @@ void appUpdate(app_t* _app, globalContext_t* _global)
 
                 DrawModel(_global->churchMesh, (Vector3) { 4, 0.f, 2 }, 0.2f, WHITE);
 
-                Vector3 pos = extractTranslation(&_global->meshCube.transform);
-                DrawModel(_global->meshCube, pos, 1.0f, WHITE);
+                // Cube
+                {
+                    Vector3 pos = extractTranslation(&_global->meshCube.transform);
+                    DrawModel(_global->meshCube, pos, 1.0f, WHITE);
+                }
+
+                // Gizmo Arrow
+                {
+                    DrawModel(_global->meshGizmoArrowCone, (Vector3) { 5, 0.5f, 0 }, 1.f, RED);
+                    DrawModel(_global->meshGizmoArrowCylinder, (Vector3) { 5, 0, 0 }, 1.f, RED);
+                }
 
                 // Draw spheres to show where the lights are
                 for (int i = 0; i < MAX_LIGHTS; i++)
@@ -219,7 +229,6 @@ void appUpdate(app_t* _app, globalContext_t* _global)
                     if (_global->lights[i].enabled) DrawSphereEx(_global->lights[i].position, 0.2f, 8, 8, _global->lights[i].color);
                     else DrawSphereWires(_global->lights[i].position, 0.2f, 8, 8, ColorAlpha(_global->lights[i].color, 0.3f));
                 }
-
             }
             EndMode3D();
 
@@ -227,22 +236,16 @@ void appUpdate(app_t* _app, globalContext_t* _global)
             //----------------------------------------------------------------------------------
             BeginTextureMode(_global->renderTexture);
                 ClearBackground(WHITE);
-                BeginMode3D(_global->camera);
-                    Shader savedTmp = _global->meshCube.materials[0].shader;
-                    const uint32_t savedTextureID = _global->churchMesh.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture.id;
+                    BeginMode3D(_global->camera);
 
-                    _global->churchMesh.materials[0].shader.id = rlGetShaderIdDefault();
-                    _global->churchMesh.materials[0].shader.locs = rlGetShaderLocsDefault();
-                    const uint32_t churchMeshID = 1;
-                    globalContext.churchMesh.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture.id = rlGetTextureIdDefault();
-                    DrawModel(_global->churchMesh, (Vector3) { 4, 0.0f, 2 }, 0.2f, GetColor(churchMeshID));
+                    const float red[] = { 1.0f, 0.f, 0.f, 1.0f };
+                    SetShaderValue(_global->materialFlatColor.shader, _global->shaderFlatColorLoc, &red, SHADER_UNIFORM_VEC4);
+                    DrawModelMat(_global->churchMesh, (Vector3) { 4, 0.0f, 2 }, 0.2f, WHITE, &_global->materialFlatColor);
 
                     Vector3 pos = extractTranslation(&_global->meshCube.transform);
-                    _global->meshCube.materials[0].shader.id = rlGetShaderIdDefault();
-                    _global->meshCube.materials[0].shader.locs = rlGetShaderLocsDefault();
-                    const uint32_t cubeMeshID = 2;
-                    DrawModel(_global->meshCube, pos, 1.0f, GetColor(cubeMeshID));
-                    
+                    const float blue[] = { 0.f, 0.f, 1.f, 1.f };
+                    SetShaderValue(_global->materialFlatColor.shader, _global->shaderFlatColorLoc, &blue, SHADER_UNIFORM_VEC4);
+                    DrawModelMat(_global->meshCube, pos, 1.0f, (Color) { 0, 0, 255, 255 }, &_global->materialFlatColor);
                 EndMode3D();
             EndTextureMode();
 
@@ -254,9 +257,6 @@ void appUpdate(app_t* _app, globalContext_t* _global)
             EndShaderMode();
 
             DrawFPS(10, 10);
-            _global->churchMesh.materials[0].shader = savedTmp;
-            _global->churchMesh.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture.id = savedTextureID;
-            _global->meshCube.materials[0].shader = savedTmp;
         }
         EndDrawing();
     }
@@ -277,6 +277,7 @@ int appKickstart(int argc, char **argv)
     windowInit(&windows, 1, 1280.f * 0.3f, 720, "Tool Window", WINDOW_MODE_WINDOW, WINDOW_FEATURE_HTML | WINDOW_FEATURE_RESIZEABLE | WINDOW_FEATURE_MINIMIZABLE | WINDOW_FEATURE_MAXIMIZABLE | WINDOW_FEATURE_BORDERLESS, NULL);
     const string32_t url = (string32_t){ .m_data = "\\res\\doc2.html", .m_size = 32 };
     windowHTMLAdd(&windows, 1, &url);
+
     // Make 2nd window a child from 1st one
     {
         SetParent(windows.m_data[1].m_handle, windows.m_data[0].m_handle);
@@ -310,14 +311,18 @@ int appKickstart(int argc, char **argv)
         const int screenWidth = GetScreenWidth();
         const int screenHeight = GetScreenHeight();
         const float outlineColor[4] = { 1, 0.63, 0, 1 }; // Orange
-        const float pickingColor[4] = { BLACK.r/255, BLACK.g/255, BLACK.b/255, BLACK.a/255 };
+        const float pickingColor[4] = { WHITE.r/255, WHITE.g/255, WHITE.b/255, WHITE.a/255 };
         SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "width"), &screenWidth, SHADER_UNIFORM_INT);
         SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "height"), &screenHeight, SHADER_UNIFORM_INT);
         SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "color"), outlineColor, SHADER_UNIFORM_VEC4);
         SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "pickingColor"), pickingColor, SHADER_UNIFORM_VEC4);
         SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "size"), &globalContext.m_outlineSize, SHADER_UNIFORM_INT);
-        globalContext.renderTexture = LoadRenderTexture(screenWidth, screenHeight);
 
+        globalContext.materialFlatColor = LoadMaterialDefault();
+        UnloadShader(globalContext.materialFlatColor.shader);
+        globalContext.materialFlatColor.shader = LoadShader(0, "./src/flatColor.fs");
+        globalContext.shaderFlatColorLoc = GetShaderLocation(globalContext.materialFlatColor.shader, "color");
+        globalContext.renderTexture = LoadRenderTexture(screenWidth, screenHeight);
 
         const int ambientLoc = GetShaderLocation(globalContext.mainShader, "ambient");
         SetShaderValue(globalContext.mainShader, ambientLoc, (float[4]) { 2.f, 2.f, 2.f, 1.0f }, SHADER_UNIFORM_VEC4);
@@ -334,6 +339,15 @@ int appKickstart(int argc, char **argv)
 
         globalContext.meshCube = LoadModelFromMesh(GenMeshCube(1.0f, 1.0f, 1.0f));
         globalContext.meshCube.materials[0].shader = globalContext.mainShader;
+
+        // Gizmo Arrow
+        {
+            globalContext.meshGizmoArrowCone = LoadModelFromMesh(GenMeshCone(0.1f, 0.3f, 15.f));
+            globalContext.meshGizmoArrowCone.materials[0].shader = globalContext.mainShader;
+
+            globalContext.meshGizmoArrowCylinder = LoadModelFromMesh(GenMeshCylinder(0.05f, 0.5f, 15.f));
+            globalContext.meshGizmoArrowCylinder.materials[0].shader = globalContext.mainShader;
+        }
 
         globalContext.churchMesh = LoadModel("./res/models/church/churchMesh.obj");
         globalContext.churchTextureDiffuse = LoadTexture("./res/models/church/churchTextureDiffuse.png");
