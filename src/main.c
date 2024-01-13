@@ -137,13 +137,9 @@ void windowNotify(windowData_t* _window, void* _data)
     }
 }
 
-Vector3 extractTranslation(const Matrix* _transformMatrix)
+Vector3 extractTranslation(Matrix* _mat)
 {
-    Vector3 translation;
-    translation.x = _transformMatrix->m12;
-    translation.y = _transformMatrix->m13;
-    translation.z = _transformMatrix->m14;
-    return translation;
+    return (Vector3) { _mat->m12, _mat->m13, _mat->m14 };
 }
 
 void appUpdate(app_t* _app, globalContext_t* _global)
@@ -152,7 +148,7 @@ void appUpdate(app_t* _app, globalContext_t* _global)
     {
         if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) 
         { 
-            UpdateCamera(&_global->camera, CAMERA_CUSTOM);
+            UpdateCamera(&_global->camera, CAMERA_FREE);
             MC_HMCALLSCRIPTFUNC csfArgs;
             WCHAR pszRetVal[64];
 
@@ -171,8 +167,8 @@ void appUpdate(app_t* _app, globalContext_t* _global)
         if (IsKeyPressed('R')) _global->camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };
 
         // Update the shader with the camera view vector (points towards { 0.0f, 0.0f, 0.0f })
-        float cameraPos[3] = { _global->camera.position.x, _global->camera.position.y, _global->camera.position.z };
-        SetShaderValue(_global->mainShader, _global->mainShader.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
+        float cameraPosf[3] = { _global->camera.position.x, _global->camera.position.y, _global->camera.position.z };
+        SetShaderValue(_global->mainShader, _global->mainShader.locs[SHADER_LOC_VECTOR_VIEW], cameraPosf, SHADER_UNIFORM_VEC3);
 
         // Check key inputs to enable/disable lights
         if (IsKeyPressed(KEY_Y)) { _global->lights[0].enabled = !_global->lights[0].enabled; }
@@ -180,16 +176,37 @@ void appUpdate(app_t* _app, globalContext_t* _global)
         if (IsKeyPressed(KEY_G)) { _global->lights[2].enabled = !_global->lights[2].enabled; }
         if (IsKeyPressed(KEY_B)) { _global->lights[3].enabled = !_global->lights[3].enabled; }
 
+        if (_global->meshSelected != NULL)
+        {
+            const float axisX = -IsKeyDown(KEY_LEFT) + IsKeyDown(KEY_RIGHT);
+            _global->meshSelected->transform.m12 += 0.01f * axisX;
+
+            const float axisZ = IsKeyDown(KEY_UP) - IsKeyDown(KEY_DOWN);
+            _global->meshSelected->transform.m14 += 0.01f * axisZ;
+            
+            if (axisX != 0.f || axisZ != 0.f)
+            {
+                
+                const BoundingBox selected = GetModelBoundingBox(*_global->meshSelected);
+                const Vector3 pos = extractTranslation(&_global->meshSelected->transform);
+                const BoundingBox afterPos =
+                {
+                    .min = (Vector3) { selected.min.x + pos.x, selected.min.y + pos.y, selected.min.z + pos.z },
+                    .max = (Vector3) { selected.max.x + pos.x, selected.max.y + pos.y, selected.max.z + pos.z },
+                };
+                _global->bbxSelected = afterPos;
+            }
+        }
+
         // Update light values (actually, only enable/disable them)
         for (int i = 0; i < MAX_LIGHTS; i++) UpdateLightValues(_global->mainShader, _global->lights[i]);
 
-        Color colorPicked = WHITE;
         if (IsMouseButtonPressed(MOUSE_BUTTON_MIDDLE))
         {
             Image image = LoadImageFromTexture(_global->renderTexture.texture);
             image.format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
 
-            colorPicked = GetImageColor(image, GetMouseX(), image.height - GetMouseY()); // Need to reverse image on Y axis
+            const Color colorPicked = GetImageColor(image, GetMouseX(), image.height - GetMouseY()); // Need to reverse image on Y axis
             const float pickingColor[4] = { (float)colorPicked.r, (float)colorPicked.g, (float)colorPicked.b, (float)colorPicked.a };
             const uint16_t id = convertFloat3ArrayToUint16(pickingColor);
 
@@ -199,8 +216,24 @@ void appUpdate(app_t* _app, globalContext_t* _global)
             if (colorPicked.r != WHITE.r && colorPicked.g != WHITE.g && colorPicked.b != WHITE.b)
             {
                 const uintptr_t addressMesh = (uintptr_t)&globalContext + id;
-                Model* meshSelected = (Model*)(addressMesh);
-                printf("mesh x: %d", meshSelected->transform.m12);
+                _global->meshSelected = (Model*)(addressMesh);
+
+                const BoundingBox selected = GetModelBoundingBox(*_global->meshSelected);
+                const Vector3 pos = extractTranslation(&_global->meshSelected->transform);
+                const BoundingBox afterPos =
+                {
+                    .min = (Vector3) { selected.min.x + pos.x, selected.min.y + pos.y, selected.min.z + pos.z },
+                    .max = (Vector3) { selected.max.x + pos.x, selected.max.y + pos.y, selected.max.z + pos.z },
+                };
+                _global->bbxSelected = afterPos;
+
+                printf("mesh: %f %f %f", _global->meshSelected->transform.m12, _global->meshSelected->transform.m13, _global->meshSelected->transform.m14);
+            }
+            else
+            {
+                _global->meshSelected = NULL;
+                _global->bbxSelected.min = Vector3Zero();
+                _global->bbxSelected.max = Vector3Zero();
             }
         }
 
@@ -210,11 +243,12 @@ void appUpdate(app_t* _app, globalContext_t* _global)
             BeginMode3D(_global->camera);
             {
                 DrawModel(_global->meshGround, Vector3Zero(), 1.f, (Color) { 20, 20, 20, 255 });
+                DrawLine3D(extractTranslation(&_global->meshCube.transform), (Vector3) { _global->camera.position.x, _global->camera.position.y, _global->camera.position.z }, RED);
 
                 // Church
                 {
-                    const Vector3 pos = extractTranslation(&_global->meshCube.transform);
-                    DrawModel(_global->churchMesh, pos, 0.2f, WHITE);
+                    const Vector3 pos = extractTranslation(&_global->churchMesh.transform);
+                    DrawModel(_global->churchMesh, pos, 1.0f, WHITE);
                 }
 
                 // Cube
@@ -223,10 +257,24 @@ void appUpdate(app_t* _app, globalContext_t* _global)
                     DrawModel(_global->meshCube, pos, 1.0f, WHITE);
                 }
 
+
                 // Gizmo Arrow
                 {
-                    DrawModel(_global->meshGizmoArrowCone, (Vector3) { 5, 0.5f, 0 }, 1.f, RED);
-                    DrawModel(_global->meshGizmoArrowCylinder, (Vector3) { 5, 0, 0 }, 1.f, RED);
+                    if (_global->meshSelected != NULL)
+                    {
+                        const Vector3 center = extractTranslation(&_global->meshSelected->transform);
+                        //Vector3 center = Vector3Divide(Vector3Add(_global->bbxSelected.min, _global->bbxSelected.max), (Vector3) { 2.0f, 2.0f, 2.0f });
+                        DrawSphereEx(center, 0.2f, 8, 8, WHITE);
+
+                        /*const Vector3 pos = extractTranslation(&_global->meshSelected->transform);
+                        const BoundingBox selected = _global->bbxSelected;
+                        const BoundingBox afterPos =
+                        {
+                            .min = (Vector3) { selected.min.x + pos.x * 2.f, selected.min.y + pos.y * 2.f, selected.min.z + pos.z * 2.f },
+                            .max = (Vector3) { selected.max.x + pos.x * 2.f, selected.max.y + pos.y * 2.f, selected.max.z + pos.z * 2.f },
+                        };*/
+                        DrawBoundingBox(_global->bbxSelected, WHITE);
+                    }
                 }
 
                 // Draw spheres to show where the lights are
@@ -234,6 +282,13 @@ void appUpdate(app_t* _app, globalContext_t* _global)
                 {
                     if (_global->lights[i].enabled) DrawSphereEx(_global->lights[i].position, 0.2f, 8, 8, _global->lights[i].color);
                     else DrawSphereWires(_global->lights[i].position, 0.2f, 8, 8, ColorAlpha(_global->lights[i].color, 0.3f));
+                }
+                
+                // CameraDir
+                {
+                    const Vector3 p0 = _global->camera.position;
+                    const Vector3 p1 = _global->camera.target;
+                    DrawLine3D(p0, p1, WHITE);
                 }
             }
             EndMode3D();
@@ -251,8 +306,8 @@ void appUpdate(app_t* _app, globalContext_t* _global)
                         convertUint16ToFloat3Array(churchID, color);
                         color[0] /= 255.f; color[1] /= 255.f; color[2] /= 255.f;
                         SetShaderValue(_global->materialFlatColor.shader, _global->shaderFlatColorLoc, &color, SHADER_UNIFORM_VEC4);
-                        const Vector3 pos = extractTranslation(&_global->meshCube.transform);
-                        DrawModelMat(_global->churchMesh, pos, 0.2f, WHITE, & _global->materialFlatColor);
+                        const Vector3 pos = extractTranslation(&_global->churchMesh.transform);
+                        DrawModelMat(_global->churchMesh, pos, 1.0f, WHITE, &_global->materialFlatColor);
                     }
 
                     // Cube mesh
@@ -316,8 +371,8 @@ int appKickstart(int argc, char **argv)
 
     // Initialize global context
     {
-        globalContext.camera.position = (Vector3){ 10.0f, 10.0f, 10.0f }; // Camera position
-        globalContext.camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };      // Camera looking at point
+        globalContext.camera.position = (Vector3){ 5.0f, 5.0f, 5.0f }; // Camera position
+        globalContext.camera.target = (Vector3){ 0.0f, 0.25f, 0.0f };      // Camera looking at point
         globalContext.camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
         globalContext.camera.fovy = 60.0f;                                // Camera field-of-view Y
         globalContext.camera.projection = CAMERA_PERSPECTIVE;             // Camera projection type
@@ -358,29 +413,30 @@ int appKickstart(int argc, char **argv)
 
         globalContext.meshCube = LoadModelFromMesh(GenMeshCube(1.0f, 1.0f, 1.0f));
         globalContext.meshCube.materials[0].shader = globalContext.mainShader;
-
-        // Gizmo Arrow
-        {
-            globalContext.meshGizmoArrowCone = LoadModelFromMesh(GenMeshCone(0.1f, 0.3f, 15.f));
-            globalContext.meshGizmoArrowCone.materials[0].shader = globalContext.mainShader;
-
-            globalContext.meshGizmoArrowCylinder = LoadModelFromMesh(GenMeshCylinder(0.05f, 0.5f, 15.f));
-            globalContext.meshGizmoArrowCylinder.materials[0].shader = globalContext.mainShader;
-        }
-
-        globalContext.churchMesh = LoadModel("./res/models/church/churchMesh.obj");
-        globalContext.churchTextureDiffuse = LoadTexture("./res/models/church/churchTextureDiffuse.png");
-        globalContext.churchMesh.materials[0].shader = globalContext.mainShader;
-        globalContext.churchMesh.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = globalContext.churchTextureDiffuse;
-        globalContext.churchMesh.transform.m12 = 15.f;
-        globalContext.churchMesh.transform.m14 = 5.f;
-
         {
             Matrix matScale = MatrixScale(1.0f, 1.0f, 1.0f);
             Matrix matRotation = MatrixRotate((Vector3){0.f, 0.f, 0.f}, 0.f);
             Matrix matTranslation = MatrixTranslate(0.f, 0.25f, 0.0f);
             Matrix matTransform = MatrixMultiply(MatrixMultiply(matScale, matRotation), matTranslation);
             globalContext.meshCube.transform = matTransform;
+        }
+
+        globalContext.churchMesh = LoadModel("./res/models/church/churchMesh.obj");
+        globalContext.churchTextureDiffuse = LoadTexture("./res/models/church/churchTextureDiffuse.png");
+        globalContext.churchMesh.materials[0].shader = globalContext.mainShader;
+        globalContext.churchMesh.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = globalContext.churchTextureDiffuse;
+        {
+            Matrix matScale = MatrixScale(0.1f, 0.1f, 0.1f);
+            Matrix matRotation = MatrixRotate((Vector3) { 0.f, 0.f, 0.f }, 0.f);
+            Matrix matTranslation = MatrixTranslate(0.0f, 0.f, 0.f);
+            Matrix matTransform = MatrixMultiply(MatrixMultiply(matScale, matRotation), matTranslation);
+            globalContext.churchMesh.transform = matTransform;
+
+            BoundingBox bbx = GetModelBoundingBox(globalContext.churchMesh);
+            Vector3 originalAnchor = Vector3Divide(Vector3Add(bbx.min, bbx.max), (Vector3) { 2.0f, 2.0f, 2.0f });
+            globalContext.churchMesh.transform.m12 += originalAnchor.x;
+            globalContext.churchMesh.transform.m13 += 0.f;
+            globalContext.churchMesh.transform.m14 += originalAnchor.z; 
         }
 
         globalContext.lights[0] = CreateLight(LIGHT_POINT, (Vector3) { -2, 1, -2 }, Vector3Zero(), YELLOW, globalContext.mainShader);

@@ -19,10 +19,10 @@ typedef struct globalContext
     RenderTexture renderTexture;
     Model meshGround;
     Model meshCube;
-    Model meshGizmoArrowCone;
-    Model meshGizmoArrowCylinder;
-
     Model churchMesh;
+
+    Model* meshSelected;
+    BoundingBox bbxSelected;
     Texture2D churchTextureDiffuse;
 
     Light lights[12];
