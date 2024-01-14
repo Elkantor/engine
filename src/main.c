@@ -153,19 +153,7 @@ void appUpdate(app_t* _app, globalContext_t* _global)
         if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) 
         { 
             UpdateCamera(&_global->camera, CAMERA_FREE);
-            MC_HMCALLSCRIPTFUNC csfArgs;
-            WCHAR pszRetVal[64];
-
-            wchar_t posX[5] = { 0 };
-            swprintf(posX, 5, L"%f", _global->camera.position.x);
-
-            csfArgs.cbSize = sizeof(MC_HMCALLSCRIPTFUNC);
-            csfArgs.pszRet = pszRetVal;
-            csfArgs.iRet = sizeof(pszRetVal) / sizeof(pszRetVal[0]);
-            csfArgs.pszArg1 = posX;
-            csfArgs.cArgs = 1;
-            windowData_t* window = &k_windows->m_data[1];
-            SendMessageW(window->m_uiHandle, MC_HM_CALLSCRIPTFUNC, (WPARAM)L"updateSlider", (LPARAM)&csfArgs);
+            uiBinderF32(&_global->camera.position.x, L"updateSlider", &k_windows->m_data[1]);
         }
 
         if (IsKeyPressed('R')) _global->camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };

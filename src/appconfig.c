@@ -13,13 +13,16 @@
 #include "engine/backends/system/windows/display.c"
 #include "engine/backends/system/windows/system.c"
 
-// Other non-plateform specific 
-#include "engine/utils/convert.c"
-
 // Mctrl
 #include <commctrl.h> // needs windows.h defined in system.c
 #include <wchar.h>
 #include <dwmapi.h>
 #include "../libs/mctrl/mctrl.h"
 #include "../libs/mctrl/mCtrl/html.h"
+
+// UI
+#include "engine/backends/ui/windows/uiBinder.c"
+
+// Other non-plateform specific 
+#include "engine/utils/convert.c"
 
