@@ -13,6 +13,7 @@ typedef struct globalContext
 
     Shader mainShader;
     Shader outlineShader;
+    Shader gizmoShader;
     Material materialFlatColor;
     uint32_t shaderFlatColorLoc;
 

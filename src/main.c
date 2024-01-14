@@ -39,8 +39,12 @@ void windowResize(windowData_t* _window, const int _width, const int _height)
             globalContext.renderTexture = LoadRenderTexture(raylibWindowWidth, _height);
             const int screenWidth = raylibWindowWidth;
             const int screenHeight = _height;
+
             SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "width"), &screenWidth, SHADER_UNIFORM_INT);
             SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "height"), &screenHeight, SHADER_UNIFORM_INT);
+
+            SetShaderValue(globalContext.gizmoShader, GetShaderLocation(globalContext.gizmoShader, "width"), &screenWidth, SHADER_UNIFORM_INT);
+            SetShaderValue(globalContext.gizmoShader, GetShaderLocation(globalContext.gizmoShader, "height"), &screenHeight, SHADER_UNIFORM_INT);
         }
     }
 }
@@ -167,7 +171,7 @@ void appUpdate(app_t* _app, globalContext_t* _global)
         if (IsKeyPressed('R')) _global->camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };
 
         // Update the shader with the camera view vector (points towards { 0.0f, 0.0f, 0.0f })
-        float cameraPosf[3] = { _global->camera.position.x, _global->camera.position.y, _global->camera.position.z };
+        const float cameraPosf[3] = { _global->camera.position.x, _global->camera.position.y, _global->camera.position.z };
         SetShaderValue(_global->mainShader, _global->mainShader.locs[SHADER_LOC_VECTOR_VIEW], cameraPosf, SHADER_UNIFORM_VEC3);
 
         // Check key inputs to enable/disable lights
@@ -186,7 +190,6 @@ void appUpdate(app_t* _app, globalContext_t* _global)
             
             if (axisX != 0.f || axisZ != 0.f)
             {
-                
                 const BoundingBox selected = GetModelBoundingBox(*_global->meshSelected);
                 const Vector3 pos = extractTranslation(&_global->meshSelected->transform);
                 const BoundingBox afterPos =
@@ -257,41 +260,45 @@ void appUpdate(app_t* _app, globalContext_t* _global)
                     DrawModel(_global->meshCube, pos, 1.0f, WHITE);
                 }
 
-
-                // Gizmo Arrow
-                {
-                    if (_global->meshSelected != NULL)
-                    {
-                        const Vector3 center = extractTranslation(&_global->meshSelected->transform);
-                        //Vector3 center = Vector3Divide(Vector3Add(_global->bbxSelected.min, _global->bbxSelected.max), (Vector3) { 2.0f, 2.0f, 2.0f });
-                        DrawSphereEx(center, 0.2f, 8, 8, WHITE);
-
-                        /*const Vector3 pos = extractTranslation(&_global->meshSelected->transform);
-                        const BoundingBox selected = _global->bbxSelected;
-                        const BoundingBox afterPos =
-                        {
-                            .min = (Vector3) { selected.min.x + pos.x * 2.f, selected.min.y + pos.y * 2.f, selected.min.z + pos.z * 2.f },
-                            .max = (Vector3) { selected.max.x + pos.x * 2.f, selected.max.y + pos.y * 2.f, selected.max.z + pos.z * 2.f },
-                        };*/
-                        DrawBoundingBox(_global->bbxSelected, WHITE);
-                    }
-                }
-
                 // Draw spheres to show where the lights are
                 for (int i = 0; i < MAX_LIGHTS; i++)
                 {
                     if (_global->lights[i].enabled) DrawSphereEx(_global->lights[i].position, 0.2f, 8, 8, _global->lights[i].color);
                     else DrawSphereWires(_global->lights[i].position, 0.2f, 8, 8, ColorAlpha(_global->lights[i].color, 0.3f));
                 }
-                
-                // CameraDir
-                {
-                    const Vector3 p0 = _global->camera.position;
-                    const Vector3 p1 = _global->camera.target;
-                    DrawLine3D(p0, p1, WHITE);
-                }
             }
             EndMode3D();
+
+            // Draw Gizmo
+            if (_global->meshSelected != NULL)
+            {
+                BeginTextureMode(_global->renderTexture);
+                    ClearBackground((Color) { 0, 0, 0, 0 });
+                    BeginMode3D(_global->camera);
+                    {
+                        // Gizmo Arrow
+                        {
+
+                            Vector3 center = Vector3Divide(Vector3Add(_global->bbxSelected.min, _global->bbxSelected.max), (Vector3) { 2.0f, 2.0f, 2.0f });
+                            center.y = extractTranslation(&_global->meshSelected->transform).y;
+                        
+                            DrawSphere(center, 0.1f, WHITE);
+                            DrawCube(Vector3Add(center, (Vector3) { 0.25, 0.f, 0.f }), 0.5f, 0.075f, 0.075f, RED);
+                            DrawCube(Vector3Add(center, (Vector3) { 0.f, 0.25f, 0.f }), 0.075f, 0.5f, 0.075f, BLUE);
+                            DrawCube(Vector3Add(center, (Vector3) { 0.f, 0.0f, 0.25f }), 0.075f, 0.075f, 0.5f, GREEN);
+
+                            //DrawCube(center, 0.1f, 0.1, 0.4f, )
+                            //DrawBoundingBox(_global->bbxSelected, WHITE);
+                        }
+                    }
+                    EndMode3D();
+                EndTextureMode();
+
+                BeginShaderMode(_global->gizmoShader);
+                    const RL_Rectangle rec = { 0, 0, (float)_global->renderTexture.texture.width, (float)-_global->renderTexture.texture.height };
+                    DrawTextureRec(_global->renderTexture.texture, rec, (Vector2) { 0, 0 }, WHITE);
+                EndMode3D();
+            }
 
             // Draw color picking id silhouettes to texture
             //----------------------------------------------------------------------------------
@@ -397,6 +404,10 @@ int appKickstart(int argc, char **argv)
         globalContext.materialFlatColor.shader = LoadShader(0, "./src/flatColor.fs");
         globalContext.shaderFlatColorLoc = GetShaderLocation(globalContext.materialFlatColor.shader, "color");
         globalContext.renderTexture = LoadRenderTexture(screenWidth, screenHeight);
+
+        globalContext.gizmoShader = LoadShader(0, "./src/gizmo.fs");
+        SetShaderValue(globalContext.gizmoShader, GetShaderLocation(globalContext.gizmoShader, "width"), &screenWidth, SHADER_UNIFORM_INT);
+        SetShaderValue(globalContext.gizmoShader, GetShaderLocation(globalContext.gizmoShader, "height"), &screenHeight, SHADER_UNIFORM_INT);
 
         const int ambientLoc = GetShaderLocation(globalContext.mainShader, "ambient");
         SetShaderValue(globalContext.mainShader, ambientLoc, (float[4]) { 2.f, 2.f, 2.f, 1.0f }, SHADER_UNIFORM_VEC4);
