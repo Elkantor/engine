@@ -153,7 +153,6 @@ void appUpdate(app_t* _app, globalContext_t* _global)
         if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) 
         { 
             UpdateCamera(&_global->camera, CAMERA_FREE);
-            uiBinderF32(&_global->camera.position.x, L"updateSlider", &k_windows->m_data[1]);
         }
 
         if (IsKeyPressed('R')) _global->camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };
@@ -179,13 +178,15 @@ void appUpdate(app_t* _app, globalContext_t* _global)
             if (axisX != 0.f || axisZ != 0.f)
             {
                 const BoundingBox selected = GetModelBoundingBox(*_global->meshSelected);
-                const Vector3 pos = extractTranslation(&_global->meshSelected->transform);
+                Vector3 pos = extractTranslation(&_global->meshSelected->transform);
                 const BoundingBox afterPos =
                 {
                     .min = (Vector3) { selected.min.x + pos.x, selected.min.y + pos.y, selected.min.z + pos.z },
                     .max = (Vector3) { selected.max.x + pos.x, selected.max.y + pos.y, selected.max.z + pos.z },
                 };
                 _global->bbxSelected = afterPos;
+
+                uiBinderVector3(&pos, L"transformSet", k_windows->m_data[1].m_uiHandle);
             }
         }
 
@@ -210,15 +211,14 @@ void appUpdate(app_t* _app, globalContext_t* _global)
                 _global->meshSelected = (Model*)(addressMesh);
 
                 const BoundingBox selected = GetModelBoundingBox(*_global->meshSelected);
-                const Vector3 pos = extractTranslation(&_global->meshSelected->transform);
+                Vector3 pos = extractTranslation(&_global->meshSelected->transform);
                 const BoundingBox afterPos =
                 {
                     .min = (Vector3) { selected.min.x + pos.x, selected.min.y + pos.y, selected.min.z + pos.z },
                     .max = (Vector3) { selected.max.x + pos.x, selected.max.y + pos.y, selected.max.z + pos.z },
                 };
                 _global->bbxSelected = afterPos;
-
-                printf("mesh: %f %f %f", _global->meshSelected->transform.m12, _global->meshSelected->transform.m13, _global->meshSelected->transform.m14);
+                uiBinderVector3(&pos, L"transformSet", k_windows->m_data[1].m_uiHandle);
             }
             else
             {

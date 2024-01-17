@@ -42,5 +42,6 @@
     function updateSlider(value)
     {
         document.getElementById("percentageDisplay").innerText = parseFloat(value).toFixed(3);
+        return true;
     }
 }

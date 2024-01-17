@@ -23,44 +23,80 @@
       </div>
 
       <!--<div id="div1" class="draggable node" style="top: 100px; left: 100px;"></div>
-      <div id="div2" class="draggable node" style="top: 200px; left: 300px;"></div>-->
+    <div id="div2" class="draggable node" style="top: 200px; left: 300px;"></div>-->
 
-      <div style="border: 1px solid darkgrey; padding: 16px; display: inline-block; width:80%;">
-          <div>Image:</div>
+      <!-- Transform -->
+      <div style="padding:1em; border: 1px solid grey; width: 80%; display:inline-block;">
+          <div style="padding-bottom: 0.2em;">Transform</div>
+          </br>
+          <div style="width: 33%;">
+              <label for="transformX">x:</label>
+              <input type="number" id="transformX" name="transformX" style="border: 2px solid red;" value="0.0" step="0.01">
+          </div>
+          <div style="width: 33%">
+              <label for="transformY">y:</label>
+              <input type="number" id="transformY" name="transformY" style="border: 2px solid blue;" value="0.0">
+          </div>
+          <div style="width: 33%;">
+              <label for="transformZ">z:</label>
+              <input type="number" id="transformZ" name="transformZ" style="border: 2px solid green;" value="0.0">
+          </div>
+            <script>
+                var transformX = document.getElementById("transformX");
+                var transformY = document.getElementById("transformY");
+                var transformZ = document.getElementById("transformZ");
+
+                function transformSet(x, y, z) {
+                    transformX.value = parseFloat(x);
+                    transformY.value = parseFloat(y);
+                    transformZ.value = parseFloat(z);
+
+                }
+
+                function transformGet() {
+                    return transformX.value + " " + transformY.value + " " + transformZ.value + " ";
+                }
+            </script>
+          </div>
+
+          </br>
+
+          <div style="border: 1px solid darkgrey; padding: 16px; display: inline-block; width:80%;">
+              <div>Image:</div>
+              <br>
+              <img id="image" src="" alt="Forest" style="border-radius: 4px; border: 1px solid #ddd; padding: 5px; width: 75px; height:75px; behavior: url(./PIE.htc);">
+              <label for="avatar" style="font: 1rem 'Fira Sans', sans-serif; margin-bottom: 100px; behavior: url(./PIE.htc);"></label>
+              <input class="inputfile" onchange='document.getElementById("image").setAttribute("src", document.getElementById("avatar").value);' type="file" id="avatar" name="avatar" accept="image/png, image/jpeg" />
+              <button onclick='document.getElementById("CopyClipboard").click(); if (document.getElementById("avatar").value == "") return; snackbar("Path copied to clipboard");'>
+                  <svg height="16" width="12" viewBox="0 0 384 512"><!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M192 0c-41.8 0-77.4 26.7-90.5 64H64C28.7 64 0 92.7 0 128V448c0 35.3 28.7 64 64 64H320c35.3 0 64-28.7 64-64V128c0-35.3-28.7-64-64-64H282.5C269.4 26.7 233.8 0 192 0zm0 64a32 32 0 1 1 0 64 32 32 0 1 1 0-64zM112 192H272c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16z" /></svg>
+              </button>
+              <a id="CopyClipboard" href="app:CopyClipboardAvatar" hidden></a>
+              <br>
+          </div>
+
           <br>
-          <img id="image" src="" alt="Forest" style="border-radius: 4px; border: 1px solid #ddd; padding: 5px; width: 75px; height:75px; behavior: url(./PIE.htc);">
-          <label for="avatar" style="font: 1rem 'Fira Sans', sans-serif; margin-bottom: 100px; behavior: url(./PIE.htc);"></label>
-          <input class="inputfile" onchange='document.getElementById("image").setAttribute("src", document.getElementById("avatar").value);' type="file" id="avatar" name="avatar" accept="image/png, image/jpeg" />
-          <button onclick='document.getElementById("CopyClipboard").click(); if (document.getElementById("avatar").value == "") return; snackbar("Path copied to clipboard");'>
-              <svg height="16" width="12" viewBox="0 0 384 512"><!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M192 0c-41.8 0-77.4 26.7-90.5 64H64C28.7 64 0 92.7 0 128V448c0 35.3 28.7 64 64 64H320c35.3 0 64-28.7 64-64V128c0-35.3-28.7-64-64-64H282.5C269.4 26.7 233.8 0 192 0zm0 64a32 32 0 1 1 0 64 32 32 0 1 1 0-64zM112 192H272c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16z" /></svg>
-          </button>
-          <a id="CopyClipboard" href="app:CopyClipboardAvatar" hidden></a>
+
+          <div style="border: 1px solid darkgrey; padding: 16px; display: inline-block;">
+              <label for="gamma">Gamma</label>
+              <input class="custom-slider" type="range" step="0.01" min="0" max="4" id="gamma" onchange="document.getElementById('gammaChanged').click();" value="2.2">
+              <a id="gammaChanged" href="app:gamma" hidden></a>
+              <script>
+                  var gamma = document.getElementById("gamma");
+                  function gammaUpdate() {
+                      return gamma.value;
+                  }
+              </script>
+          </div>
+
           <br>
-      </div>
+          <button onclick="snackbar('this is a test')">Show Snackbar</button>
 
-      <br>
-
-      <div style="border: 1px solid darkgrey; padding: 16px; display: inline-block;">
-          <label for="gamma">Gamma</label>
-          <input class="custom-slider" type="range" step="0.01" min="0" max="4" id="gamma" onchange="document.getElementById('gammaChanged').click();" value="2.2">
-          <a id="gammaChanged" href="app:gamma" hidden></a>
-          <script>
-              var gamma = document.getElementById("gamma");
-              function gammaUpdate() {
-                  return gamma.value;
-              }
-          </script>
-      </div>
-
-    <br>
-    <button onclick="snackbar('this is a test')">Show Snackbar</button>
-
-    <!--<iframe src="nodes.html"
+          <!--<iframe src="nodes.html"
             title="GeeksforGeeks" width="400" height="300">
     </iframe>-->
 
-    <div id="snackbar">Some text some message..</div>
-  </body>
+          <div id="snackbar">Some text some message..</div>
+</body>
 
   <!-- Snackbar -->
   <link rel="stylesheet" href="snackbar.css">
