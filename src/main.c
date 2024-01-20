@@ -5,14 +5,20 @@
 
 static app_t app;
 static globalContext_t globalContext = { 0 };
+static void* handleLib = NULL;
 
 // NOTE(Victor): build with mingw on windows:
 // gcc src/main.c -g -Wall -Werror -lmCtrl -lcomctl32 -lDwmapi -lwinmm -lgdi32 -lopengl32 -lraylib -L./libs/raylib -L./libs/mctrl
 // devenv a.exe (to open visual studio debugger)
 
 // NOTE(Victor): build with zig cc (clang) compiler on windows:
-// zig cc src/main.c -gcodeview -g -Wall -Werror -lmCtrl -lcomctl32 -lDwmapi -lwinmm -lgdi32 -lopengl32 -lraylib -L./libs/raylib -L./libs/mctrl
+// zig cc src/main.c -g -Wall -Werror -lmCtrl -lcomctl32 -lDwmapi -lwinmm -lgdi32 -lopengl32 -lraylib -L./libs/raylib -L./libs/mctrl
 // devenv a.exe (to open visual studio debugger)
+
+Vector3 extractTranslation(Matrix* _mat)
+{
+    return (Vector3) { _mat->m12, _mat->m13, _mat->m14 };
+}
 
 void windowResize(windowData_t* _window, const int _width, const int _height)
 {
@@ -52,9 +58,21 @@ void windowResize(windowData_t* _window, const int _width, const int _height)
 void windowFocus(windowData_t* _window)
 {
     const char* mainWindow = "First Window";
+    const char* toolWindow = "Tool Window";
+    
     if ((uintptr_t)_window->m_title == (uintptr_t)mainWindow)
     {
-        SetFocus(GetWindowHandle());
+        if (GetWindowHandle() != NULL)
+        {
+            SetWindowFocused();
+        }
+    }
+    else if ((uintptr_t)_window->m_title == (uintptr_t)toolWindow)
+    {
+        if (_window->m_uiHandle != NULL)
+        {
+            SetFocus(_window->m_uiHandle);
+        }
     }
 }
 
@@ -68,13 +86,45 @@ void windowNotify(windowData_t* _window, void* _data)
         const string32_t value = string32Init((const char*)nmhtmlurl->pszUrl);
         const uint64_t hash = string32Hash(&value);
 
+        printf("value: %s\n", string32DataGet(&value));
+
+        static const uint64_t appFocusIn = string32HashConst("app:focusIn");
         static const uint64_t appHelloHash = string32HashConst("app:SayHello");
         static const uint64_t appHUDClickedHash = string32HashConst("app:HUDClicked");
         static const uint64_t appCopyClipboardAvatar = string32HashConst("app:CopyClipboardAvatar");
         static const uint64_t appGamma = string32HashConst("app:gamma");
+        static const uint64_t appTransformSet = string32HashConst("app:transformSet");
 
         switch (hash)
         {
+            case appFocusIn:
+            {
+                SetFocus(_window->m_handle);
+                break;
+            }
+            case appTransformSet:
+            {
+                if (globalContext.meshSelected != NULL)
+                {
+                    Vector3 transform = Vector3Zero();
+                    uiBinderVector3(&transform, L"transformGet", _window->m_uiHandle);
+
+                    globalContext.meshSelected->transform.m12 = transform.x;
+                    globalContext.meshSelected->transform.m13 = transform.y;
+                    globalContext.meshSelected->transform.m14 = transform.z;
+
+                    const BoundingBox selected = GetModelBoundingBox(*globalContext.meshSelected);
+                    Vector3 pos = extractTranslation(&globalContext.meshSelected->transform);
+                    const BoundingBox afterPos =
+                    {
+                        .min = (Vector3) { selected.min.x + pos.x, selected.min.y + pos.y, selected.min.z + pos.z },
+                        .max = (Vector3) { selected.max.x + pos.x, selected.max.y + pos.y, selected.max.z + pos.z },
+                    };
+                    globalContext.bbxSelected = afterPos;
+                }
+
+                break;
+            }
             case appHelloHash:
             {
                 MessageBoxA(_window->m_handle, "Button Clicked", "Button Clicked!", MB_OK);
@@ -82,6 +132,7 @@ void windowNotify(windowData_t* _window, void* _data)
             }
             case appGamma:
             {
+                windowFocus(&k_windows->m_data[0]);
                 WCHAR pszRetVal[128];
 
                 MC_HMCALLSCRIPTFUNC csfArgs =
@@ -102,18 +153,30 @@ void windowNotify(windowData_t* _window, void* _data)
             case appHUDClickedHash:
             {
                 MessageBoxA(_window->m_handle, "Button Clicked", "Button Clicked!", MB_OK);
-                SetFocus(k_windows->m_data[0].m_handle);
+                windowFocus(&k_windows->m_data[0]);
 
-                MC_HMCALLSCRIPTFUNC csfArgs;
-                WCHAR pszRetVal[128];
+                const string32_t file = string32Init("./src/test.c");
+                void* lib = hotReloadLibNew(&file);
+                
+                if (lib != NULL)
+                {
+                    if (handleLib != NULL)
+                    {
+                        hotReloadLibDelete(handleLib);
+                    }
 
-                csfArgs.cbSize = sizeof(MC_HMCALLSCRIPTFUNC);
-                csfArgs.pszRet = pszRetVal;
-                csfArgs.iRet = sizeof(pszRetVal) / sizeof(pszRetVal[0]);
-                csfArgs.cArgs = 0;
-                windowData_t* window = &k_windows->m_data[2];
-                SendMessageW(window->m_uiHandle, MC_HM_CALLSCRIPTFUNC, (WPARAM)L"looseFocus", (LPARAM)&csfArgs);
+                    handleLib = lib;
 
+                    printf("hot reloaded\n");
+
+                    const string32_t function = string32Init("test");
+                    int (*func)(void) = hotReloadSymbolGet(handleLib, &function);
+
+                    if (func != NULL)
+                    {
+                        func();
+                    }
+                }
                 break;
             }
             case appCopyClipboardAvatar:
@@ -134,28 +197,30 @@ void windowNotify(windowData_t* _window, void* _data)
             }
             default:
             {
-                SetFocus(k_windows->m_data[0].m_handle);
                 break;
             }
         }
     }
 }
 
-Vector3 extractTranslation(Matrix* _mat)
-{
-    return (Vector3) { _mat->m12, _mat->m13, _mat->m14 };
-}
-
 void appUpdate(app_t* _app, globalContext_t* _global)
 {
     if (!WindowShouldClose() && _app->m_running)
     {
+        if (CheckCollisionPointRec(GetMousePosition(), (RL_Rectangle) { 0, 0, GetScreenWidth(), GetScreenHeight() }))
+        {
+            if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) || IsMouseButtonDown(MOUSE_BUTTON_RIGHT) || IsMouseButtonDown(MOUSE_BUTTON_MIDDLE))
+            {
+                SetWindowFocused();
+            }
+        }
+
         if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) 
         { 
             UpdateCamera(&_global->camera, CAMERA_FREE);
         }
 
-        if (IsKeyPressed('R')) _global->camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };
+        if (IsKeyPressed(KEY_F5)) _global->camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };
 
         // Update the shader with the camera view vector (points towards { 0.0f, 0.0f, 0.0f })
         const float cameraPosf[3] = { _global->camera.position.x, _global->camera.position.y, _global->camera.position.z };
@@ -193,7 +258,7 @@ void appUpdate(app_t* _app, globalContext_t* _global)
         // Update light values (actually, only enable/disable them)
         for (int i = 0; i < MAX_LIGHTS; i++) UpdateLightValues(_global->mainShader, _global->lights[i]);
 
-        if (IsMouseButtonPressed(MOUSE_BUTTON_MIDDLE))
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
         {
             Image image = LoadImageFromTexture(_global->renderTexture.texture);
             image.format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
@@ -268,15 +333,12 @@ void appUpdate(app_t* _app, globalContext_t* _global)
                         {
 
                             Vector3 center = Vector3Divide(Vector3Add(_global->bbxSelected.min, _global->bbxSelected.max), (Vector3) { 2.0f, 2.0f, 2.0f });
-                            center.y = extractTranslation(&_global->meshSelected->transform).y;
+                            center.y = _global->meshSelected->transform.m13;
                         
                             DrawSphere(center, 0.1f, WHITE);
                             DrawCube(Vector3Add(center, (Vector3) { 0.25, 0.f, 0.f }), 0.5f, 0.075f, 0.075f, RED);
                             DrawCube(Vector3Add(center, (Vector3) { 0.f, 0.25f, 0.f }), 0.075f, 0.5f, 0.075f, BLUE);
                             DrawCube(Vector3Add(center, (Vector3) { 0.f, 0.0f, 0.25f }), 0.075f, 0.075f, 0.5f, GREEN);
-
-                            //DrawCube(center, 0.1f, 0.1, 0.4f, )
-                            //DrawBoundingBox(_global->bbxSelected, WHITE);
                         }
                     }
                     EndMode3D();
@@ -350,7 +412,7 @@ int appKickstart(int argc, char **argv)
     // Make 2nd window a child from 1st one
     {
         SetParent(windows.m_data[1].m_handle, windows.m_data[0].m_handle);
-        const LONG nNewStyle = (GetWindowLong(windows.m_data[1].m_handle, GWL_STYLE) & ~WS_POPUP) | WS_CHILDWINDOW;
+        const LONG nNewStyle = (GetWindowLong(windows.m_data[1].m_handle, GWL_STYLE) & ~WS_POPUP) | WS_CHILDWINDOW | WS_CHILD;
         SetWindowLong(windows.m_data[1].m_handle, GWL_STYLE, nNewStyle);
         const ULONG_PTR cNewStyle = GetClassLongPtr(windows.m_data[1].m_handle, GCL_STYLE) | CS_DBLCLKS;
         SetClassLongPtr(windows.m_data[1].m_handle, GCL_STYLE, cNewStyle);
@@ -447,7 +509,7 @@ int appKickstart(int argc, char **argv)
     // Make raylib window as child
     {
         SetParent(GetWindowHandle(), windows.m_data[0].m_handle);
-        const LONG nNewStyle = (GetWindowLong(GetWindowHandle(), GWL_STYLE) & ~WS_POPUP) | WS_CHILDWINDOW;
+        const LONG nNewStyle = (GetWindowLong(GetWindowHandle(), GWL_STYLE) & ~WS_POPUP) | WS_CHILDWINDOW | WS_CHILD;
         SetWindowLong(GetWindowHandle(), GWL_STYLE, nNewStyle);
         const ULONG_PTR cNewStyle = GetClassLongPtr(GetWindowHandle(), GCL_STYLE) | CS_DBLCLKS;
         SetClassLongPtr(GetWindowHandle(), GCL_STYLE, cNewStyle);
@@ -466,6 +528,9 @@ int appKickstart(int argc, char **argv)
 
     RL_CloseWindow();
     mcHtml_Terminate();
+
+    if (handleLib != NULL) { hotReloadLibDelete(handleLib); }
+    system("rm -rf tmp.lib tmp.pdb *tmp*.lib");
 
     return 0;
 }

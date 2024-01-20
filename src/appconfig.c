@@ -12,6 +12,7 @@
 #include "engine/backends/system/windows/window.c"
 #include "engine/backends/system/windows/display.c"
 #include "engine/backends/system/windows/system.c"
+#include "engine/backends/utils/windows/hotReload.c"
 
 // Mctrl
 #include <commctrl.h> // needs windows.h defined in system.c

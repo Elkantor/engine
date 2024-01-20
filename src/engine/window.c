@@ -116,6 +116,8 @@ void windowDestroy(windowArray_t* _windows, void* _handle);
 uint32_t windowIndexGet(windowArray_t* _windows, void* _handle);
 void windowHTMLAdd(windowArray_t* _windows, const uint32_t _index, const string32_t* _path);
 
+void windowFocusHandle(windowArray_t* _windows);
+
 // User implemenatations
 void windowResize(windowData_t* _window, const int _width, const int _height);
 int windowPaint(windowData_t* _window);

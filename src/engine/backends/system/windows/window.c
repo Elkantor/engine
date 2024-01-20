@@ -46,6 +46,10 @@ uint32_t windowIndexGet(windowArray_t* _windows, void* _handle)
 		{
 			return i;
 		}
+		else if (current->m_uiHandle == _handle)
+		{
+			return i;
+		}
 	}
 
 	return UINT32_MAX;
@@ -92,13 +96,58 @@ void windowHTMLAdd(windowArray_t* _windows, const uint32_t _index, const string3
 	SendMessage(windowData->m_handle, WM_SIZE, SIZE_RESTORED, width << 16 | height);
 }
 
+void windowFocusHandle(windowArray_t* _windows)
+{
+	POINT cursor;
+	GetCursorPos(&cursor);
+
+	for (size_t i = 0; i < _windows->m_size; ++i)
+	{
+		const HWND window = _windows->m_data[i].m_handle;
+
+		RECT windowRect;
+		ScreenToClient(window, &cursor);
+		GetClientRect(window, &windowRect);
+
+		if (PtInRect(&windowRect, cursor))
+		{
+			const uint32_t index = windowIndexGet(_windows, window);
+			
+			if (index == UINT32_MAX)
+			{
+				printf("problem occured\n");
+			}
+			else
+			{
+				const HWND childWindow = ChildWindowFromPointEx(window, cursor, CWP_ALL);
+
+				if (childWindow != NULL)
+				{
+					const uint32_t index = windowIndexGet(_windows, childWindow);
+
+					if (index != UINT32_MAX)
+					{
+						printf("Focusing child: %d\n", index);
+						windowFocus(&_windows->m_data[index]);
+					}
+				}
+				else
+				{
+					const uint32_t index = windowIndexGet(_windows, window);
+
+					if (index != UINT32_MAX)
+					{
+						printf("Focusing window: %d\n", index);
+						windowFocus(&_windows->m_data[index]);
+					}
+				}
+			}
+		}
+	}
+}
+
 LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LPARAM _lParam)
 {
-	//int windowId;
-	//DWORD pointerId;
-	//POINTER_INFO pointerInfo = {0};
-	//POINTER_PEN_INFO penInfo = {0};
-	
 	switch (_msg) 
 	{
 		case WM_NOTIFY:
@@ -109,23 +158,24 @@ LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LP
 				if (windowIndex == UINT32_MAX) break;
 
 				windowData_t* window = &k_windows->m_data[windowIndex];
-				windowNotify(window, (NMHDR*)_lParam);
+
+				if (window->m_uiHandle != NULL)
+				{
+					windowNotify(window, (NMHDR*)_lParam);
+				}
 				return 0;
 			}
 		}
 		case WM_SETFOCUS:
 		{
+			printf("Focus changed\n");
+
 			if (k_windows->m_size > 0)
 			{
 				const uint32_t windowIndex = windowIndexGet(k_windows, _hWnd);
 				if (windowIndex == UINT32_MAX) break;
 
 				windowData_t* window = &k_windows->m_data[windowIndex];
-
-				if (window->m_uiHandle != NULL)
-				{
-					SetFocus(window->m_uiHandle);
-				}
 				windowFocus(window);
 			}
 			return 0;
@@ -183,23 +233,6 @@ LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LP
 			windowResize(window, width, height);
 			break;
 		}
-		/*case WM_PAINT:
-		{
-			if (k_windows->m_size > 0)
-			{
-				const uint32_t windowIndex = windowIndexGet(k_windows, _hWnd);
-				if (windowIndex == UINT32_MAX) return DefWindowProcW(_hWnd, _msg, _wParam, _lParam);;
-
-				windowData_t* window = &k_windows->m_data[windowIndex];
-				const int result = windowPaint(window);
-
-				if (result == -1)
-				{
-					return DefWindowProcW(_hWnd, _msg, _wParam, _lParam);
-				}
-			}
-			break;
-		}*/
 	}
 
 	return DefWindowProcW(_hWnd, _msg, _wParam, _lParam);
@@ -453,6 +486,25 @@ void windowCreate(displayDataArray_t* _displays, windowData_t* _windowData, cons
 	{
 		DWORD value = 1;
 		DwmSetWindowAttribute(_windowData->m_handle, 20, &value, sizeof(value));
+	}
+
+	// Track mouse events
+	{
+		TRACKMOUSEEVENT tme;
+		tme.cbSize = sizeof(TRACKMOUSEEVENT);
+		tme.dwFlags = TME_HOVER;
+		tme.hwndTrack = _windowData->m_handle; // Handle de votre fenêtre parente
+
+		if (TrackMouseEvent(&tme))
+		{
+			// Suivi de la souris activé avec succès
+		}
+		else
+		{
+			// Gestion de l'erreur
+			DWORD dwError = GetLastError();
+			printf("Error: %d\n", dwError);
+		}
 	}
 }
 

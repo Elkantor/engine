@@ -31,6 +31,21 @@ string32_t string32Init(const char* _from)
     }
 }
 
+const char* const string32DataGet(const string32_t* _string)
+{
+    const char* data;
+    if (_string->m_data[0] == *_string->m_span)
+    {
+        data = (char*)_string->m_data;
+    }
+    else
+    {
+        data = _string->m_span;
+    }
+
+    return data;
+}
+
 uint64_t string32Hash(const string32_t* _string)
 {
     const char* data;
