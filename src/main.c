@@ -52,6 +52,9 @@ void windowResize(windowData_t* _window, const int _width, const int _height)
             SetShaderValue(globalContext.gizmoShader, GetShaderLocation(globalContext.gizmoShader, "width"), &screenWidth, SHADER_UNIFORM_INT);
             SetShaderValue(globalContext.gizmoShader, GetShaderLocation(globalContext.gizmoShader, "height"), &screenHeight, SHADER_UNIFORM_INT);
         }
+
+        // HUD always on top
+        SetWindowPos(k_windows->m_data[2].m_handle, HWND_TOP, 100, 5, 30, 30, SWP_DRAWFRAME);
     }
 }
 
@@ -74,6 +77,8 @@ void windowFocus(windowData_t* _window)
             SetFocus(_window->m_uiHandle);
         }
     }
+
+    SetWindowPos(k_windows->m_data[2].m_handle, HWND_TOP, 100, 5, 30, 30, SWP_DRAWFRAME);
 }
 
 void windowNotify(windowData_t* _window, void* _data)
@@ -99,7 +104,7 @@ void windowNotify(windowData_t* _window, void* _data)
         {
             case appFocusIn:
             {
-                SetFocus(_window->m_handle);
+                windowFocus(_window);
                 break;
             }
             case appTransformSet:
@@ -207,11 +212,12 @@ void appUpdate(app_t* _app, globalContext_t* _global)
 {
     if (!WindowShouldClose() && _app->m_running)
     {
+        // Get back focus on raylib window when window is overring
         if (CheckCollisionPointRec(GetMousePosition(), (RL_Rectangle) { 0, 0, GetScreenWidth(), GetScreenHeight() }))
         {
             if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) || IsMouseButtonDown(MOUSE_BUTTON_RIGHT) || IsMouseButtonDown(MOUSE_BUTTON_MIDDLE))
             {
-                SetWindowFocused();
+                windowFocus(&k_windows->m_data[0]);
             }
         }
 
@@ -516,13 +522,21 @@ int appKickstart(int argc, char **argv)
         SetWindowPosition(0, 0);
     }
 
+    // Make window 3 a child from first one, and on top of raylib
+    {
+        SetParent(windows.m_data[2].m_handle, windows.m_data[0].m_handle);
+        const LONG nNewStyle = (GetWindowLong(windows.m_data[2].m_handle, GWL_STYLE) & ~WS_POPUP) | WS_CHILDWINDOW | WS_CHILD;
+        SetWindowLong(windows.m_data[2].m_handle, GWL_STYLE, nNewStyle);
+        const ULONG_PTR cNewStyle = GetClassLongPtr(windows.m_data[2].m_handle, GCL_STYLE) | CS_DBLCLKS;
+        SetClassLongPtr(windows.m_data[2].m_handle, GCL_STYLE, cNewStyle);
+
+        SetWindowPos(windows.m_data[2].m_handle, HWND_TOP, 100, 5, 30, 30, SWP_DRAWFRAME);
+        MARGINS margins = { -10, -10, -10, -10 };
+        DwmExtendFrameIntoClientArea(windows.m_data[2].m_handle, &margins);
+    }
+
     const uint64_t stackSize = appStackSizeGet();
     printf("App stack size left: %zu\n", stackSize);
-
-    SetParent(windows.m_data[2].m_handle, windows.m_data[0].m_handle);
-    SetWindowPos(windows.m_data[2].m_handle, HWND_TOP, 100, 5, 30, 30, SWP_NOREPOSITION);
-    MARGINS margins = { -10, -10, -10, -10 };
-    DwmExtendFrameIntoClientArea(windows.m_data[2].m_handle, &margins);
 
     appStart(&app, &globalContext);
 

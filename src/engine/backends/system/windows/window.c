@@ -487,25 +487,6 @@ void windowCreate(displayDataArray_t* _displays, windowData_t* _windowData, cons
 		DWORD value = 1;
 		DwmSetWindowAttribute(_windowData->m_handle, 20, &value, sizeof(value));
 	}
-
-	// Track mouse events
-	{
-		TRACKMOUSEEVENT tme;
-		tme.cbSize = sizeof(TRACKMOUSEEVENT);
-		tme.dwFlags = TME_HOVER;
-		tme.hwndTrack = _windowData->m_handle; // Handle de votre fenêtre parente
-
-		if (TrackMouseEvent(&tme))
-		{
-			// Suivi de la souris activé avec succès
-		}
-		else
-		{
-			// Gestion de l'erreur
-			DWORD dwError = GetLastError();
-			printf("Error: %d\n", dwError);
-		}
-	}
 }
 
 void windowShow(windowData_t* _window)
