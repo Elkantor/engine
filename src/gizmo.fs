@@ -9,6 +9,7 @@ uniform sampler2D texture0;
 // Input
 uniform int width;
 uniform int height;
+uniform vec4 outlineColor;
 
 void main()
 {
@@ -35,7 +36,7 @@ void main()
 
             if (texture(texture0, fragTexCoord + vec2(i, j) * vec2(x, y)).rgba == vec4(0.0f, 0.0f, 0.0f, 0.0f))
             {
-                finalColor = vec4(0.0f, 0.0f, 0.0f, 0.35f);
+                finalColor = outlineColor;
                 return;
             }
         }

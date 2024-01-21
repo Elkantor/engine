@@ -5,6 +5,14 @@
 #define RLIGHTS_IMPLEMENTATION
 #include "../libs/raylib/rlights.h"
 
+typedef enum
+{
+    GIZMO_NONE = 0,
+    GIZMO_TRANSFORM_X,
+    GIZMO_TRANSFORM_Y,
+    GIZMO_TRANSFORM_Z,
+} gizmo_t;
+
 // NOTE(Victor): This struct is passed as parameter to app update function, each frame
 typedef struct globalContext
 {
@@ -18,6 +26,7 @@ typedef struct globalContext
     uint32_t shaderFlatColorLoc;
 
     RenderTexture renderTexture;
+    RenderTexture m_renderTextureForeground;
     Model meshGround;
     Model meshCube;
     Model churchMesh;
@@ -31,5 +40,6 @@ typedef struct globalContext
     float m_gamma;
     uint32_t m_gammaLoc;
     int m_outlineSize;
+    gizmo_t m_gizmoSelected;
     bool m_bbxChecked : 1;
 } globalContext_t;

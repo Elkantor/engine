@@ -31,11 +31,12 @@
         <div style="margin-top: 0.5em; margin-bottom: 0.5em; font-weight: bold;">Rendering</div>
             <div style="padding: 1em; display: flex; background-color: rgb(19, 20, 21); border-radius: 0.25rem; " id="renderingBlock">
                 <label for="gamma" style="font-weight: 600; flex-direction: row; padding-top: 1em; padding-right: 1em;">Gamma</label>
-                <input style="flex-direction: row;" type="range" step="0.01" min="0" max="4" id="gamma" onchange="document.getElementById('gammaChanged').click();" value="2.2">
+                <input style="flex-direction: row;" type="range" step="0.01" min="0" max="4" id="gamma" onchange="document.getElementById('gammaChanged').click();" value="2.2" onclick="this.focus();">
                 <a id="gammaChanged" href="app:gamma" hidden></a>
                 <script>
                     var gamma = document.getElementById("gamma");
-                    function gammaUpdate() {
+
+                    function gammaGet() {
                         return gamma.value;
                     }
                 </script>

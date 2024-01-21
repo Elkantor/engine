@@ -1409,6 +1409,9 @@ RLAPI void DrawTextureNPatch(Texture2D texture, NPatchInfo nPatchInfo, RL_Rectan
 // Color/pixel related functions
 RLAPI Color Fade(Color color, float alpha);                                 // Get color with alpha applied, alpha goes from 0.0f to 1.0f
 RLAPI int ColorToInt(Color color);                                          // Get hexadecimal value for a Color
+
+#define ColorToIntConst(color) (((int)color.r << 24) | ((int)color.g << 16) | ((int)color.b << 8) | (int)color.a)
+
 RLAPI Vector4 ColorNormalize(Color color);                                  // Get Color normalized as float [0..1]
 RLAPI Color ColorFromNormalized(Vector4 normalized);                        // Get Color from normalized values [0..1]
 RLAPI Vector3 ColorToHSV(Color color);                                      // Get HSV values for a Color, hue [0..360], saturation/value [0..1]
