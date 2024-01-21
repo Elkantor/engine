@@ -7,44 +7,48 @@
     
         <link rel="stylesheet" href="font-awesome.css">
         <link rel="stylesheet" href="button.css">
+        <link rel="stylesheet" href="topnav.css">
     
-        <title>Tool</title>
+        <title>Selection</title>
     </head>
     <body style="background-color: rgb(30, 32, 32); color:rgb(223, 223, 223); font-family: 'Open Sans', Helvetica; overflow: auto; font-size: 0.8em;" onmouseenter="focusIn(this)">
         <input id="focuser" type="text" hidden>
-        <button id="reloader" onclick="reload();">Reloader</button>
         <a id="actionFocusIn" href="app:focusIn" hidden></a>
         <a id="actionFocusOut" href="app:focusOut" hidden></a>
 
+        <div class="topnav">
+            <a class="active" href="./selection.html">Selection</a>
+            <a href="./settings.html">Settings</a>
+        </div>
+
+        <button id="reloader" onclick="reload();">Reloader</button>
         <button onclick='document.getElementById("SayHello").click();'>Button test</button>
         <a id="SayHello" href="app:SayHello" hidden></a>
 
         <!--<div class="slider-container">
-            <div class="slider-track" id="sliderTrack">
-                <div class="slider-thumb" id="sliderThumb"></div>
-            </div>
-            <div id="percentageDisplay" class="slider-percentage">0%</div>
-            <a id="updateCameraX" href="app:updateCameraX" hidden></a>
-        </div>-->
-
+        <div class="slider-track" id="sliderTrack">
+            <div class="slider-thumb" id="sliderThumb"></div>
+        </div>
+        <div id="percentageDisplay" class="slider-percentage">0%</div>
+        <a id="updateCameraX" href="app:updateCameraX" hidden></a>
+    </div>-->
         </br>
         </br>
 
         <!--<div id="div1" class="draggable node" style="top: 100px; left: 100px;"></div>
-        <div id="div2" class="draggable node" style="top: 200px; left: 300px;"></div>-->
-
+    <div id="div2" class="draggable node" style="top: 200px; left: 300px;"></div>-->
         <!-- Transform -->
         <div style="margin-top: 0.5em; margin-bottom: 0.5em; font-weight: bold;">Transform</div>
-        <div style="padding: 1em; width: 80%; display: inline-block; background-color: rgb(19, 20, 21); border-radius: 0.25rem;" id="transformBlock">
+        <div style="padding: 1em; display: flex; background-color: rgb(19, 20, 21); border-radius: 0.25rem; " id="transformBlock">
             <a id="actionChangeTransform" href="app:transformSet" hidden></a>
-            <label for="transformX" style="display: inline; font-weight: 600;">x:</label>
-            <input type="number" oninput="validateNumber(this)" id="transformX" name="transformX" style="border: 3px solid rgb(220, 6, 0); width: 5em; border-radius: 0.25rem; ">
+            <label for="transformX" style="font-weight: 600; flex-direction: row; padding-top: 5px; padding-bottom: 5px; padding-right: 5px;">x:</label>
+            <input type="number" oninput="validateNumber(this)" id="transformX" name="transformX" style="border: 3px solid rgb(220, 6, 0); border-radius: 0.25rem; flex-direction: row; width: 25%;">
 
-            <label for="transformY" style="display: inline; font-weight: 600;">y:</label>
-            <input type="number" oninput="validateNumber(this)" id="transformY" name="transformY" style="border: 3px solid rgb(3, 96, 179); width: 5em; border-radius: 0.25rem; " onmouseover="this.focus();">
+            <label for="transformY" style="font-weight: 600; flex-direction: row; padding: 5px; ">y:</label>
+            <input type="number" oninput="validateNumber(this)" id="transformY" name="transformY" style="border: 3px solid rgb(3, 96, 179); border-radius: 0.25rem; flex-direction: row; width: 25%; ">
 
-            <label for="transformZ" style="display: inline; font-weight:600;">z:</label>
-            <input type="number" oninput="validateNumber(this)" id="transformZ" name="transformZ" style="border: 3px solid rgb(72, 193, 0); width: 5em; border-radius: 0.25rem; ">
+            <label for="transformZ" style="font-weight: 600; flex-direction: row; padding: 5px; ">z:</label>
+            <input type="number" oninput="validateNumber(this)" id="transformZ" name="transformZ" style="border: 3px solid rgb(72, 193, 0); border-radius: 0.25rem; flex-direction: row; width: 25%;">
 
             <script>
                 var transformX = document.getElementById("transformX");
@@ -73,43 +77,42 @@
         </div>
 
         </br>
-        </br>
 
         <div style="margin-top: 0.5em; margin-bottom: 0.5em; font-weight: bold;">Properties</div>
-        <div style="padding: 1em; width: 80%; display: inline-block; background-color: rgb(19, 20, 21); border-radius: 0.25rem;" id="transformBlock">
-            <label for="boundbox">Bounding-Box:</label>
-            <input style="display:inline;" type="checkbox" id="boundbox" name="boundbox" />
-        </div>
-
-        <div style="border: 1px solid darkgrey; padding: 16px; display: inline-block; width:80%; margin-top:1em;">
-            <div>Image:</div>
-            <br>
-            <img id="image" src="" alt="Forest" style="border-radius: 4px; border: 1px solid #ddd; padding: 5px; width: 75px; height:75px; behavior: url(./PIE.htc);">
-            <label for="avatar" style="font: 1rem 'Fira Sans', sans-serif; margin-bottom: 100px; behavior: url(./PIE.htc);"></label>
-            <input class="inputfile" onchange='document.getElementById("image").setAttribute("src", document.getElementById("avatar").value);' type="file" id="avatar" name="avatar" accept="image/png, image/jpeg" />
-            <button onclick='document.getElementById("CopyClipboard").click(); if (document.getElementById("avatar").value == "") return; snackbar("Path copied to clipboard");'>
-                <svg height="16" width="12" viewBox="0 0 384 512"><!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M192 0c-41.8 0-77.4 26.7-90.5 64H64C28.7 64 0 92.7 0 128V448c0 35.3 28.7 64 64 64H320c35.3 0 64-28.7 64-64V128c0-35.3-28.7-64-64-64H282.5C269.4 26.7 233.8 0 192 0zm0 64a32 32 0 1 1 0 64 32 32 0 1 1 0-64zM112 192H272c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16z" /></svg>
-            </button>
-            <a id="CopyClipboard" href="app:CopyClipboardAvatar" hidden></a>
-            <br>
-        </div>
-
-        <br>
-
-        <div style="border: 1px solid darkgrey; padding: 16px; display: inline-block;">
-            <label for="gamma">Gamma</label>
-            <input class="custom-slider" type="range" step="0.01" min="0" max="4" id="gamma" onchange="document.getElementById('gammaChanged').click();" value="2.2">
-            <a id="gammaChanged" href="app:gamma" hidden></a>
+        <div style="padding: 1em; display: inline-block; background-color: rgb(19, 20, 21); border-radius: 0.25rem;" id="transformBlock">
+            <label for="boundingbox" style="font-weight: 600;">Bounding-Box:</label>
+            <input style="display:inline;" type="checkbox" id="boundingbox" name="boundingbox" onchange="document.getElementById('actionChangeBbx').click();" />
+            <a id="actionChangeBbx" href="app:bbxSet" hidden></a>
             <script>
-                var gamma = document.getElementById("gamma");
-                function gammaUpdate() {
-                    return gamma.value;
+                var boundingBox = document.getElementById("boundingbox");
+
+                function boundingBoxGet() {
+                    return boundingBox.checked + 0;
+                }
+
+                function boundingBoxSet(value) {
+                    boundingBox.checked = value;
                 }
             </script>
         </div>
 
+        </br>
+        </br>
+
+        <!--<div style="margin-top: 0.5em; margin-bottom: 0.5em; font-weight: bold;">Texture</div>
+        <div style="padding: 1em; display: flex; background-color: rgb(19, 20, 21); border-radius: 0.25rem;" id="transformBlock">
+            <img id="image" src="" alt="Forest" style="border-radius: 4px; border: 1px solid #ddd; padding: 5px; width: 20%; flex-direction: row;">
+            <label for="avatar" style="font: 1rem 'Fira Sans', sans-serif; margin-bottom: 100px; flex-direction: row;"></label>
+            <input class="inputfile" onchange='document.getElementById("image").setAttribute("src", document.getElementById("avatar").value);' type="file" id="avatar" name="avatar" accept="image/png, image/jpeg" />
+            <button onclick='document.getElementById("CopyClipboard").click(); if (document.getElementById("avatar").value == "") return; snackbar("Path copied to clipboard");'>
+                <svg height="16" width="12" viewBox="0 0 384 512">--><!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><!--<path d="M192 0c-41.8 0-77.4 26.7-90.5 64H64C28.7 64 0 92.7 0 128V448c0 35.3 28.7 64 64 64H320c35.3 0 64-28.7 64-64V128c0-35.3-28.7-64-64-64H282.5C269.4 26.7 233.8 0 192 0zm0 64a32 32 0 1 1 0 64 32 32 0 1 1 0-64zM112 192H272c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16z" /></svg>
+            </button>
+            <a id="CopyClipboard" href="app:CopyClipboardAvatar" hidden></a>
+            <br>
+        </div>-->
+
         <br>
-        <button onclick="snackbar('this is a test')">Show Snackbar</button>
+        <!--<button onclick="snackbar('this is a test')">Show Snackbar</button>-->
 
         <div id="snackbar">Some text some message..</div>
     </body>

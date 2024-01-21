@@ -15,12 +15,12 @@
 
     function handleMouseDown(sliderThumb, sliderTrack, e) {
         document.onmousemove = function (e) {
-        moveSlider(sliderThumb, sliderTrack, e.clientX);
+            moveSlider(sliderThumb, sliderTrack, e.clientX);
         };
 
         document.onmouseup = function () {
-        document.onmousemove = null;
-        document.onmouseup = null;
+            document.onmousemove = null;
+            document.onmouseup = null;
         };
     }
 

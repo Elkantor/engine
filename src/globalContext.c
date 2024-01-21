@@ -29,5 +29,7 @@ typedef struct globalContext
     Light lights[12];
 
     float m_gamma;
+    uint32_t m_gammaLoc;
     int m_outlineSize;
+    bool m_bbxChecked : 1;
 } globalContext_t;

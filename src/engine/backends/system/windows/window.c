@@ -72,6 +72,9 @@ void windowDestroy(windowArray_t* _windows, void* _handle)
 	DestroyWindow(_handle);
 	memset(&_windows->m_data[windowIndex], 0, sizeof(_windows->m_data[0]));
 	_windows->m_data[windowIndex] = _windows->m_data[--_windows->m_size];
+
+	// Kill the app by zeroing the windows array if it was the main window
+	_windows->m_size = (windowIndex == 0) ? 0 : _windows->m_size;
 }
 
 void windowHTMLAdd(windowArray_t* _windows, const uint32_t _index, const string32_t* _path)

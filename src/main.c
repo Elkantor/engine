@@ -99,12 +99,23 @@ void windowNotify(windowData_t* _window, void* _data)
         static const uint64_t appCopyClipboardAvatar = string32HashConst("app:CopyClipboardAvatar");
         static const uint64_t appGamma = string32HashConst("app:gamma");
         static const uint64_t appTransformSet = string32HashConst("app:transformSet");
+        static const uint64_t appBbxSet = string32HashConst("app:bbxSet");
 
         switch (hash)
         {
             case appFocusIn:
             {
                 windowFocus(_window);
+                break;
+            }
+            case appBbxSet:
+            {
+                if (globalContext.meshSelected != NULL)
+                {
+                    int value = 0;
+                    uiBinderI32(&value, L"boundingBoxGet", _window->m_uiHandle);
+                    globalContext.m_bbxChecked = value;
+                }
                 break;
             }
             case appTransformSet:
@@ -151,8 +162,7 @@ void windowNotify(windowData_t* _window, void* _data)
                 SendMessageW(window->m_uiHandle, MC_HM_CALLSCRIPTFUNC, (WPARAM)L"gammaUpdate", (LPARAM)&csfArgs);
 
                 globalContext.m_gamma = _wtof(pszRetVal);
-                const int gammaLoc = GetShaderLocation(globalContext.mainShader, "gamma");
-                SetShaderValue(globalContext.mainShader, gammaLoc, &globalContext.m_gamma, SHADER_UNIFORM_FLOAT);
+                SetShaderValue(globalContext.mainShader, globalContext.m_gammaLoc, &globalContext.m_gamma, SHADER_UNIFORM_FLOAT);
                 break;
             }
             case appHUDClickedHash:
@@ -290,12 +300,17 @@ void appUpdate(app_t* _app, globalContext_t* _global)
                 };
                 _global->bbxSelected = afterPos;
                 uiBinderVector3(&pos, L"transformSet", k_windows->m_data[1].m_uiHandle);
+
+                _global->m_bbxChecked = false;
+                int bbx = _global->m_bbxChecked;
+                uiBinderI32(&bbx, L"boundingBoxSet", k_windows->m_data[1].m_uiHandle);
             }
             else
             {
                 _global->meshSelected = NULL;
                 _global->bbxSelected.min = Vector3Zero();
                 _global->bbxSelected.max = Vector3Zero();
+                _global->m_bbxChecked = false;
             }
         }
 
@@ -324,6 +339,11 @@ void appUpdate(app_t* _app, globalContext_t* _global)
                 {
                     if (_global->lights[i].enabled) DrawSphereEx(_global->lights[i].position, 0.2f, 8, 8, _global->lights[i].color);
                     else DrawSphereWires(_global->lights[i].position, 0.2f, 8, 8, ColorAlpha(_global->lights[i].color, 0.3f));
+                }
+
+                if (_global->meshSelected != NULL && _global->m_bbxChecked)
+                {
+                    DrawBoundingBox(_global->bbxSelected, WHITE);
                 }
             }
             EndMode3D();
@@ -412,7 +432,7 @@ int appKickstart(int argc, char **argv)
     windowInit(&windows, 0, 1280, 720, "First Window", WINDOW_MODE_WINDOW, WINDOW_FEATURE_RESIZEABLE | WINDOW_FEATURE_MINIMIZABLE | WINDOW_FEATURE_MAXIMIZABLE, NULL);
     
     windowInit(&windows, 1, 1280.f * 0.3f, 720, "Tool Window", WINDOW_MODE_WINDOW, WINDOW_FEATURE_HTML | WINDOW_FEATURE_RESIZEABLE | WINDOW_FEATURE_MINIMIZABLE | WINDOW_FEATURE_MAXIMIZABLE | WINDOW_FEATURE_BORDERLESS, NULL);
-    const string32_t url = (string32_t){ .m_data = "\\res\\doc2.html", .m_size = 32 };
+    const string32_t url = (string32_t){ .m_data = "\\res\\selection.html", .m_size = 32 };
     windowHTMLAdd(&windows, 1, &url);
 
     // Make 2nd window a child from 1st one
@@ -469,8 +489,8 @@ int appKickstart(int argc, char **argv)
         SetShaderValue(globalContext.mainShader, ambientLoc, (float[4]) { 2.f, 2.f, 2.f, 1.0f }, SHADER_UNIFORM_VEC4);
 
         globalContext.m_gamma = 2.2f;
-        const int gammaLoc = GetShaderLocation(globalContext.mainShader, "gamma");
-        SetShaderValue(globalContext.mainShader, gammaLoc, &globalContext.m_gamma, SHADER_UNIFORM_FLOAT);
+        globalContext.m_gammaLoc = GetShaderLocation(globalContext.mainShader, "gamma");
+        SetShaderValue(globalContext.mainShader, globalContext.m_gammaLoc, &globalContext.m_gamma, SHADER_UNIFORM_FLOAT);
 
         globalContext.meshGround = LoadModelFromMesh(GenMeshCube(100.0f, 100.0f, 1.0f));
         globalContext.meshGround.materials[0].shader = globalContext.mainShader;

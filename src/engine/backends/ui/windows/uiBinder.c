@@ -20,6 +20,28 @@ void uiBinderF32(float* _value, const wchar_t* _func, void* _windowHandle)
     SendMessageW(_windowHandle, MC_HM_CALLSCRIPTFUNC, (WPARAM)_func, (LPARAM)&csfArgs);
 }
 
+void uiBinderI32(int32_t* _value, const wchar_t* _func, void* _windowHandle)
+{
+    WCHAR pszRetVal[32] = { 0 };
+
+    MC_HMCALLSCRIPTFUNC csfArgs =
+    {
+        .cbSize = sizeof(MC_HMCALLSCRIPTFUNC),
+        .pszRet = pszRetVal,
+        .iRet = sizeof(pszRetVal) / sizeof(pszRetVal[0]),
+        .cArgs = 1,
+        .iArg1 = *_value,
+    };
+
+    SendMessageW(_windowHandle, MC_HM_CALLSCRIPTFUNC, (WPARAM)_func, (LPARAM)&csfArgs);
+
+    if (wcsnlen_s(pszRetVal, sizeof(pszRetVal) / sizeof(pszRetVal[0])) > 0)
+    {
+        *_value = _wtoi(pszRetVal);
+        return;
+    }
+}
+
 void uiBinderVector3(Vector3* _value, const wchar_t* _func, void* _windowHandle)
 {
     wchar_t buff1[32] = { 0 };
@@ -46,7 +68,7 @@ void uiBinderVector3(Vector3* _value, const wchar_t* _func, void* _windowHandle)
 
     SendMessageW(_windowHandle, MC_HM_CALLSCRIPTFUNC, (WPARAM)_func, (LPARAM)&csfArgs);
 
-    if (wcsnlen_s(pszRetVal, 129) > 0)
+    if (wcsnlen_s(pszRetVal, 128) > 0)
     {
         size_t current = 0;
         float values[3] = { 0 };
