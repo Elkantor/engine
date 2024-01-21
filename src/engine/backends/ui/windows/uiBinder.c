@@ -18,6 +18,12 @@ void uiBinderF32(float* _value, const wchar_t* _func, void* _windowHandle)
     csfArgs.cArgs = 1;
 
     SendMessageW(_windowHandle, MC_HM_CALLSCRIPTFUNC, (WPARAM)_func, (LPARAM)&csfArgs);
+
+    if (wcsnlen_s(pszRetVal, sizeof(pszRetVal) / sizeof(pszRetVal[0])) > 0)
+    {
+        *_value = _wtof(pszRetVal);
+        return;
+    }
 }
 
 void uiBinderI32(int32_t* _value, const wchar_t* _func, void* _windowHandle)
