@@ -309,6 +309,13 @@ RMAPI float Vector2Distance(Vector2 v1, Vector2 v2)
     return result;
 }
 
+RMAPI Vector2 Vector2Dir(Vector2 _pointA, Vector2 _pointB)
+{
+    Vector2 dir = (Vector2){ _pointB.x - _pointA.x, _pointB.y - _pointA.y };
+    
+    return dir;
+}
+
 // Calculate square distance between two vectors
 RMAPI float Vector2DistanceSqr(Vector2 v1, Vector2 v2)
 {

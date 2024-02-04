@@ -95,22 +95,14 @@ void windowNotify(windowData_t* _window, void* _data)
         const string32_t value = string32Init((const char*)nmhtmlurl->pszUrl);
         const uint64_t hash = string32Hash(&value);
 
-        static const uint64_t appFocusIn = string32HashConst("app:focusIn");
-        static const uint64_t appHelloHash = string32HashConst("app:SayHello");
-        static const uint64_t appHUDClickedHash = string32HashConst("app:HUDClicked");
-        static const uint64_t appCopyClipboardAvatar = string32HashConst("app:CopyClipboardAvatar");
-        static const uint64_t appGamma = string32HashConst("app:gamma");
-        static const uint64_t appTransformSet = string32HashConst("app:transformSet");
-        static const uint64_t appBbxSet = string32HashConst("app:bbxSet");
-
         switch (hash)
         {
-            case appFocusIn:
+            case string32HashConst("app:focusIn"):
             {
                 windowFocus(_window);
                 break;
             }
-            case appBbxSet:
+            case string32HashConst("app:bbxSet"):
             {
                 if (globalContext.meshSelected != NULL)
                 {
@@ -120,7 +112,7 @@ void windowNotify(windowData_t* _window, void* _data)
                 }
                 break;
             }
-            case appTransformSet:
+            case string32HashConst("app:transformSet"):
             {
                 if (globalContext.meshSelected != NULL)
                 {
@@ -143,12 +135,12 @@ void windowNotify(windowData_t* _window, void* _data)
 
                 break;
             }
-            case appHelloHash:
+            case string32HashConst("app:SayHello"):
             {
                 MessageBoxA(_window->m_handle, "Button Clicked", "Button Clicked!", MB_OK);
                 break;
             }
-            case appGamma:
+            case string32HashConst("app:gamma"):
             {
                 windowFocus(&k_windows->m_data[0]);
                 
@@ -156,7 +148,7 @@ void windowNotify(windowData_t* _window, void* _data)
                 SetShaderValue(globalContext.mainShader, globalContext.m_gammaLoc, &globalContext.m_gamma, SHADER_UNIFORM_FLOAT);
                 break;
             }
-            case appHUDClickedHash:
+            case string32HashConst("app:HUDClicked"):
             {
                 MessageBoxA(_window->m_handle, "Button Clicked", "Button Clicked!", MB_OK);
                 windowFocus(&k_windows->m_data[0]);
@@ -185,7 +177,7 @@ void windowNotify(windowData_t* _window, void* _data)
                 }
                 break;
             }
-            case appCopyClipboardAvatar:
+            case string32HashConst("app:CopyClipboardAvatar"):
             {
                 MC_HMCALLSCRIPTFUNC csfArgs;
                 WCHAR pszRetVal[128];
@@ -227,7 +219,7 @@ void appUpdate(app_t* _app, globalContext_t* _global)
             UpdateCamera(&_global->camera, CAMERA_FREE);
         }
 
-        if (IsKeyPressed(KEY_F5)) _global->camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };
+        if (IsKeyPressed(KEY_F5)) { _global->camera.target = (Vector3){ 0.0f, 0.0f, 0.0f }; }
 
         // Update the shader with the camera view vector (points towards { 0.0f, 0.0f, 0.0f })
         const float cameraPosf[3] = { _global->camera.position.x, _global->camera.position.y, _global->camera.position.z };
@@ -239,22 +231,47 @@ void appUpdate(app_t* _app, globalContext_t* _global)
         if (IsKeyPressed(KEY_G)) { _global->lights[2].enabled = !_global->lights[2].enabled; }
         if (IsKeyPressed(KEY_B)) { _global->lights[3].enabled = !_global->lights[3].enabled; }
 
+        // Gizmo translation
         if (_global->meshSelected != NULL)
         {
             const float axisX = -IsKeyDown(KEY_LEFT) + IsKeyDown(KEY_RIGHT);
-            _global->meshSelected->transform.m12 += 0.01f * axisX;
-
             const float axisZ = IsKeyDown(KEY_UP) - IsKeyDown(KEY_DOWN);
-            _global->meshSelected->transform.m14 += 0.01f * axisZ;
-            
+
             if (axisX != 0.f || axisZ != 0.f)
+            {
+                _global->meshSelected->transform.m12 += 0.01f * axisX; 
+                _global->meshSelected->transform.m14 += 0.01f * axisZ;
+            }
+
+            const Vector3 previousPos = extractTranslation(&_global->meshSelected->transform);
+            const bool gizmoX = (_global->m_gizmoSelected == GIZMO_TRANSFORM_X && IsMouseButtonDown(MOUSE_BUTTON_LEFT));
+            const bool gizmoY = (_global->m_gizmoSelected == GIZMO_TRANSFORM_Y && IsMouseButtonDown(MOUSE_BUTTON_LEFT));
+            const bool gizmoZ = (_global->m_gizmoSelected == GIZMO_TRANSFORM_Z && IsMouseButtonDown(MOUSE_BUTTON_LEFT));
+
+            if (gizmoX)
+            {
+                _global->meshSelected->transform.m12 += 0.01f * GetMouseDelta().x;
+            }
+            else if (gizmoY)
+            {
+                _global->meshSelected->transform.m13 += -0.01f * GetMouseDelta().y;
+            }
+            else if (gizmoZ)
+            {
+                _global->meshSelected->transform.m14 += -0.01f * GetMouseDelta().x;
+            }
+
+            const Vector3 afterPos = extractTranslation(&_global->meshSelected->transform);
+            const Vector3 delta = Vector3Subtract(previousPos, afterPos);
+
+            if (delta.x != 0.f || delta.y != 0.f || delta.z != 0.f)
             {
                 const BoundingBox selected = GetModelBoundingBox(*_global->meshSelected);
                 Vector3 pos = extractTranslation(&_global->meshSelected->transform);
                 const BoundingBox afterPos =
                 {
-                    .min = (Vector3) { selected.min.x + pos.x, selected.min.y + pos.y, selected.min.z + pos.z },
-                    .max = (Vector3) { selected.max.x + pos.x, selected.max.y + pos.y, selected.max.z + pos.z },
+                    .min = (Vector3){ selected.min.x + pos.x, selected.min.y + pos.y, selected.min.z + pos.z },
+                    .max = (Vector3){ selected.max.x + pos.x, selected.max.y + pos.y, selected.max.z + pos.z },
                 };
                 _global->bbxSelected = afterPos;
 
@@ -350,7 +367,6 @@ void appUpdate(app_t* _app, globalContext_t* _global)
             BeginMode3D(_global->camera);
             {
                 DrawModel(_global->meshGround, Vector3Zero(), 1.f, (Color) { 20, 20, 20, 255 });
-                DrawLine3D(extractTranslation(&_global->meshCube.transform), (Vector3) { _global->camera.position.x, _global->camera.position.y, _global->camera.position.z }, RED);
 
                 // Church
                 {
@@ -388,7 +404,6 @@ void appUpdate(app_t* _app, globalContext_t* _global)
                         // Gizmo Arrow
                         {
                             const Vector3 center = Vector3Divide(Vector3Add(_global->bbxSelected.min, _global->bbxSelected.max), (Vector3) { 2.0f, 2.0f, 2.0f });
-
                             DrawSphere(center, 0.15f, (Color) { 230, 230, 230, 255 });
 
                             DrawCube(Vector3Add(center, (Vector3) { 0.25, 0.f, 0.f }), 0.75f, 0.1f, 0.1f, RED);
