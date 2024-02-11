@@ -30,15 +30,24 @@ typedef struct globalContext
     Model meshGround;
     Model meshCube;
     Model churchMesh;
+    Texture2D churchTextureDiffuse;
+
+    // Graveyard
+    Model m_graveyardTreeDecoratedMesh;
+    Model m_graveyardPineLargeMesh;
+    Model m_graveyardArchGateMesh;
 
     Model* meshSelected;
     BoundingBox bbxSelected;
-    Texture2D churchTextureDiffuse;
 
     Light lights[12];
 
     float m_gamma;
     uint32_t m_gammaLoc;
+
+    float m_ambient;
+    uint32_t m_ambientLoc;
+
     int m_outlineSize;
     gizmo_t m_gizmoSelected;
     bool m_bbxChecked : 1;

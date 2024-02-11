@@ -148,6 +148,14 @@ void windowNotify(windowData_t* _window, void* _data)
                 SetShaderValue(globalContext.mainShader, globalContext.m_gammaLoc, &globalContext.m_gamma, SHADER_UNIFORM_FLOAT);
                 break;
             }
+            case string32HashConst("app:ambient"):
+            {
+                windowFocus(&k_windows->m_data[0]);
+
+                uiBinderF32(&globalContext.m_ambient, L"ambientGet", _window->m_uiHandle);
+                SetShaderValue(globalContext.mainShader, globalContext.m_ambientLoc, (float[4]) { globalContext.m_ambient, globalContext.m_ambient, globalContext.m_ambient, 1.f }, SHADER_UNIFORM_VEC4);
+                break;
+            }
             case string32HashConst("app:HUDClicked"):
             {
                 MessageBoxA(_window->m_handle, "Button Clicked", "Button Clicked!", MB_OK);
@@ -374,6 +382,24 @@ void appUpdate(app_t* _app, globalContext_t* _global)
                     DrawModel(_global->churchMesh, pos, 1.0f, WHITE);
                 }
 
+                // Graveyard Dead Tree
+                {
+                    const Vector3 pos = extractTranslation(&_global->m_graveyardTreeDecoratedMesh.transform);
+                    DrawModel(_global->m_graveyardTreeDecoratedMesh, pos, 1.0f, WHITE);
+                }
+
+                // Graveyard Pine Orange Large
+                {
+                    const Vector3 pos = extractTranslation(&_global->m_graveyardPineLargeMesh.transform);
+                    DrawModel(_global->m_graveyardPineLargeMesh, pos, 1.0f, WHITE);
+                }
+
+                // Graveyard Pine Orange Large
+                {
+                    const Vector3 pos = extractTranslation(&_global->m_graveyardArchGateMesh.transform);
+                    DrawModel(_global->m_graveyardArchGateMesh, pos, 1.0f, WHITE);
+                }
+
                 // Cube
                 {
                     const Vector3 pos = extractTranslation(&_global->meshCube.transform);
@@ -430,6 +456,39 @@ void appUpdate(app_t* _app, globalContext_t* _global)
                     SetShaderValue(_global->materialFlatColor.shader, _global->shaderFlatColorLoc, &color, SHADER_UNIFORM_VEC4);
                     const Vector3 pos = extractTranslation(&_global->churchMesh.transform);
                     DrawModelMat(_global->churchMesh, pos, 1.0f, WHITE, &_global->materialFlatColor);
+                }
+
+                // Graveyard Tree mesh
+                {
+                    static const uint16_t meshID = offsetof(globalContext_t, m_graveyardTreeDecoratedMesh);
+                    static float color[4] = { 0,[3] = 1.f };
+                    convertUint16ToFloat3Array(meshID, color);
+                    color[0] /= 255.f; color[1] /= 255.f; color[2] /= 255.f;
+                    SetShaderValue(_global->materialFlatColor.shader, _global->shaderFlatColorLoc, &color, SHADER_UNIFORM_VEC4);
+                    const Vector3 pos = extractTranslation(&_global->m_graveyardTreeDecoratedMesh.transform);
+                    DrawModelMat(_global->m_graveyardTreeDecoratedMesh, pos, 1.0f, WHITE, &_global->materialFlatColor);
+                }
+
+                // Graveyard Pine Orange Large
+                {
+                    static const uint16_t meshID = offsetof(globalContext_t, m_graveyardPineLargeMesh);
+                    static float color[4] = { 0,[3] = 1.f };
+                    convertUint16ToFloat3Array(meshID, color);
+                    color[0] /= 255.f; color[1] /= 255.f; color[2] /= 255.f;
+                    SetShaderValue(_global->materialFlatColor.shader, _global->shaderFlatColorLoc, &color, SHADER_UNIFORM_VEC4);
+                    const Vector3 pos = extractTranslation(&_global->m_graveyardPineLargeMesh.transform);
+                    DrawModelMat(_global->m_graveyardPineLargeMesh, pos, 1.0f, WHITE, &_global->materialFlatColor);
+                }
+
+                // Graveyard Arch Gate
+                {
+                    static const uint16_t meshID = offsetof(globalContext_t, m_graveyardArchGateMesh);
+                    static float color[4] = { 0,[3] = 1.f };
+                    convertUint16ToFloat3Array(meshID, color);
+                    color[0] /= 255.f; color[1] /= 255.f; color[2] /= 255.f;
+                    SetShaderValue(_global->materialFlatColor.shader, _global->shaderFlatColorLoc, &color, SHADER_UNIFORM_VEC4);
+                    const Vector3 pos = extractTranslation(&_global->m_graveyardArchGateMesh.transform);
+                    DrawModelMat(_global->m_graveyardArchGateMesh, pos, 1.0f, WHITE, &_global->materialFlatColor);
                 }
 
                 // Cube mesh
@@ -540,8 +599,9 @@ int appKickstart(int argc, char **argv)
         const float gizmoOutlineColor[] = {0.0f, 0.0f, 0.0f, 0.4f};
         SetShaderValue(globalContext.gizmoShader, GetShaderLocation(globalContext.gizmoShader, "outlineColor"), &gizmoOutlineColor, SHADER_UNIFORM_VEC4);
 
-        const int ambientLoc = GetShaderLocation(globalContext.mainShader, "ambient");
-        SetShaderValue(globalContext.mainShader, ambientLoc, (float[4]) { 2.f, 2.f, 2.f, 1.0f }, SHADER_UNIFORM_VEC4);
+        globalContext.m_ambient = 3.0f;
+        globalContext.m_ambientLoc = GetShaderLocation(globalContext.mainShader, "ambient");
+        SetShaderValue(globalContext.mainShader, globalContext.m_ambientLoc, (float[4]) { globalContext.m_ambient, globalContext.m_ambient, globalContext.m_ambient, 1.f }, SHADER_UNIFORM_VEC4);
 
         globalContext.m_gamma = 2.2f;
         globalContext.m_gammaLoc = GetShaderLocation(globalContext.mainShader, "gamma");
@@ -564,9 +624,8 @@ int appKickstart(int argc, char **argv)
         }
 
         globalContext.churchMesh = LoadModel("./res/models/church/churchMesh.obj");
-        globalContext.churchTextureDiffuse = LoadTexture("./res/models/church/churchTextureDiffuse.png");
         globalContext.churchMesh.materials[0].shader = globalContext.mainShader;
-        globalContext.churchMesh.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = globalContext.churchTextureDiffuse;
+        globalContext.churchMesh.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = LoadTexture("./res/models/church/churchTextureDiffuse.png");
         {
             Matrix matScale = MatrixScale(0.1f, 0.1f, 0.1f);
             Matrix matRotation = MatrixRotate((Vector3) { 0.f, 0.f, 0.f }, 0.f);
@@ -579,6 +638,71 @@ int appKickstart(int argc, char **argv)
             globalContext.churchMesh.transform.m12 += originalAnchor.x;
             globalContext.churchMesh.transform.m13 += 0.f;
             globalContext.churchMesh.transform.m14 += originalAnchor.z; 
+        }
+
+        // Graveyard assets
+        {
+            const Texture2D graveYardTexture2D = LoadTexture("./res/models/graveyard/halloweenbits_texture.png");
+
+            // Tree Decorated
+            {
+                globalContext.m_graveyardTreeDecoratedMesh = LoadModel("./res/models/graveyard/deadTreeDecorated/tree_dead_large_decorated.obj");
+                globalContext.m_graveyardTreeDecoratedMesh.materials[0].shader = globalContext.mainShader;
+                globalContext.m_graveyardTreeDecoratedMesh.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = graveYardTexture2D;
+                {
+                    Matrix matScale = MatrixScale(1.f, 1.f, 1.f);
+                    Matrix matRotation = MatrixRotate((Vector3) { 0.f, 0.f, 0.f }, 0.f);
+                    Matrix matTranslation = MatrixTranslate(2.0f, 0.f, 0.f);
+                    Matrix matTransform = MatrixMultiply(MatrixMultiply(matScale, matRotation), matTranslation);
+                    globalContext.m_graveyardTreeDecoratedMesh.transform = matTransform;
+
+                    BoundingBox bbx = GetModelBoundingBox(globalContext.m_graveyardTreeDecoratedMesh);
+                    Vector3 originalAnchor = Vector3Divide(Vector3Add(bbx.min, bbx.max), (Vector3) { 2.0f, 2.0f, 2.0f });
+                    globalContext.m_graveyardTreeDecoratedMesh.transform.m12 += originalAnchor.x;
+                    globalContext.m_graveyardTreeDecoratedMesh.transform.m13 += 0.f;
+                    globalContext.m_graveyardTreeDecoratedMesh.transform.m14 += originalAnchor.z;
+                }
+            }
+
+            // Pine Orange Large
+            {
+                globalContext.m_graveyardPineLargeMesh = LoadModel("./res/models/graveyard/deadTreeDecorated/tree_pine_orange_large.obj");
+                globalContext.m_graveyardPineLargeMesh.materials[0].shader = globalContext.mainShader;
+                globalContext.m_graveyardPineLargeMesh.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = graveYardTexture2D;
+                {
+                    Matrix matScale = MatrixScale(1.f, 1.f, 1.f);
+                    Matrix matRotation = MatrixRotate((Vector3) { 0.f, 0.f, 0.f }, 0.f);
+                    Matrix matTranslation = MatrixTranslate(2.0f, 0.f, 0.f);
+                    Matrix matTransform = MatrixMultiply(MatrixMultiply(matScale, matRotation), matTranslation);
+                    globalContext.m_graveyardPineLargeMesh.transform = matTransform;
+
+                    BoundingBox bbx = GetModelBoundingBox(globalContext.m_graveyardPineLargeMesh);
+                    Vector3 originalAnchor = Vector3Divide(Vector3Add(bbx.min, bbx.max), (Vector3) { 2.0f, 2.0f, 2.0f });
+                    globalContext.m_graveyardPineLargeMesh.transform.m12 += originalAnchor.x;
+                    globalContext.m_graveyardPineLargeMesh.transform.m13 += 0.f;
+                    globalContext.m_graveyardPineLargeMesh.transform.m14 += originalAnchor.z;
+                }
+            }
+
+            // Arch Gate
+            {
+                globalContext.m_graveyardArchGateMesh = LoadModel("./res/models/graveyard/deadTreeDecorated/arch_gate.obj");
+                globalContext.m_graveyardArchGateMesh.materials[0].shader = globalContext.mainShader;
+                globalContext.m_graveyardArchGateMesh.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = graveYardTexture2D;
+                {
+                    Matrix matScale = MatrixScale(1.f, 1.f, 1.f);
+                    Matrix matRotation = MatrixRotate((Vector3) { 0.f, 0.f, 0.f }, 0.f);
+                    Matrix matTranslation = MatrixTranslate(1.0f, 0.f, 2.f);
+                    Matrix matTransform = MatrixMultiply(MatrixMultiply(matScale, matRotation), matTranslation);
+                    globalContext.m_graveyardArchGateMesh.transform = matTransform;
+
+                    BoundingBox bbx = GetModelBoundingBox(globalContext.m_graveyardArchGateMesh);
+                    Vector3 originalAnchor = Vector3Divide(Vector3Add(bbx.min, bbx.max), (Vector3) { 2.0f, 2.0f, 2.0f });
+                    globalContext.m_graveyardArchGateMesh.transform.m12 += originalAnchor.x;
+                    globalContext.m_graveyardArchGateMesh.transform.m13 += 0.f;
+                    globalContext.m_graveyardArchGateMesh.transform.m14 += originalAnchor.z;
+                }
+            }
         }
 
         globalContext.lights[0] = CreateLight(LIGHT_POINT, (Vector3) { -2, 1, -2 }, Vector3Zero(), YELLOW, globalContext.mainShader);
