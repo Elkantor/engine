@@ -23,11 +23,10 @@ void* hotReloadLibNew(const string32_t* _file)
 	int result = 0;
 	{
 		char buff[512] = { 0 };
-		snprintf(buff, 512, "%s%s ", "zig cc -g -Wall -Werror -shared -o ", output);
+		snprintf(buff, 512, "%s%s ", "zig cc -g -Wall -Werror -lwinmm -lgdi32 -lopengl32 -lraylib -L./libs/raylib -DTHREADED -shared -o ", output);
 		strncat_s(buff, 512, file, _file->m_size);
 		result = system(buff);
 	}
-
 
 	if (result != 0)
 	{
@@ -48,8 +47,6 @@ void* hotReloadLibNew(const string32_t* _file)
 
 void hotReloadLibDelete(const void* _lib)
 {
-	assert(_lib != NULL);
-
 	if (_lib != NULL)
 	{
 		FreeLibrary((HINSTANCE)_lib);

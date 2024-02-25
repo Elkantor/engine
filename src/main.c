@@ -161,28 +161,34 @@ void windowNotify(windowData_t* _window, void* _data)
                 MessageBoxA(_window->m_handle, "Button Clicked", "Button Clicked!", MB_OK);
                 windowFocus(&k_windows->m_data[0]);
 
+                if (handleLib != NULL)
+                {
+                    const string32_t function = string32Init("release");
+                    int (*func)(void) = hotReloadSymbolGet(handleLib, &function);
+                    func();
+
+                    hotReloadLibDelete(handleLib);
+                    handleLib = NULL;
+                }
+
                 const string32_t file = string32Init("./src/test.c");
                 void* lib = hotReloadLibNew(&file);
                 
                 if (lib != NULL)
                 {
-                    if (handleLib != NULL)
-                    {
-                        hotReloadLibDelete(handleLib);
-                    }
-
                     handleLib = lib;
 
                     printf("hot reloaded\n");
 
-                    const string32_t function = string32Init("test");
-                    int (*func)(void) = hotReloadSymbolGet(handleLib, &function);
+                    const string32_t function = string32Init("main");
+                    int (*func)(int _argc, char* _argv[]) = hotReloadSymbolGet(handleLib, &function);
 
                     if (func != NULL)
                     {
-                        func();
+                        func(1, (char*[]) { "thread" });
                     }
                 }
+
                 break;
             }
             case string32HashConst("app:CopyClipboardAvatar"):
@@ -258,7 +264,39 @@ void appUpdate(app_t* _app, globalContext_t* _global)
 
             if (gizmoX)
             {
-                _global->meshSelected->transform.m12 += 0.01f * GetMouseDelta().x;
+                const Ray ray = GetMouseRay(GetMousePosition(), _global->camera);
+                const Vector3 center = Vector3Divide(Vector3Add(_global->bbxSelected.min, _global->bbxSelected.max), (Vector3) { 2.0f, 2.0f, 2.0f });
+                const Vector3 pos = Vector3Add(center, (Vector3) { 0.25, 0.f, 0.f });
+                const BoundingBox bbx = (BoundingBox)
+                {
+                    .min = (Vector3)
+                    {
+                        .x = pos.x - 0.75f / 2.f,
+                        .y = pos.y - 0.1f / 2.f,
+                        .z = pos.z - 0.1f / 2.f,
+                    },
+                    .max = (Vector3)
+                    {
+                        .x = pos.x + 0.75f / 2.f,
+                        .y = pos.y + 0.1f / 2.f,
+                        .z = pos.z + 0.1f / 2.f,
+                    }
+                };
+                const RayCollision rayColl = GetRayCollisionBox(ray, bbx);
+                const Vector2 mouseDelta = GetMouseDelta();
+
+                if (mouseDelta.x != 0.f && mouseDelta.y != 0.f)
+                {
+                    const Vector2 previousMousePos = Vector2Subtract(GetMousePosition(), mouseDelta);
+                    const Ray prevRay = GetMouseRay(previousMousePos, _global->camera);
+                    const RayCollision prevRayColl = GetRayCollisionBox(prevRay, bbx);
+                    
+                    const Vector3 diff = Vector3Subtract(rayColl.point, prevRayColl.point);
+                    printf("Diff: %f %f %f\n", diff.x, diff.y, diff.z);
+                    
+                }
+
+                //_global->meshSelected->transform.m12 += 0.01f * GetMouseDelta().x;
             }
             else if (gizmoY)
             {
@@ -433,6 +471,12 @@ void appUpdate(app_t* _app, globalContext_t* _global)
                             DrawSphere(center, 0.15f, (Color) { 230, 230, 230, 255 });
 
                             DrawCube(Vector3Add(center, (Vector3) { 0.25, 0.f, 0.f }), 0.75f, 0.1f, 0.1f, RED);
+
+                            if (_global->m_gizmoSelected == GIZMO_TRANSFORM_X)
+                            {
+                                DrawCubeV(Vector3Add(center, (Vector3) { -10.f, 0.f, 0.f }), (Vector3) { 30.f, .1f, .1f }, RED);
+                            }
+
                             DrawCube(Vector3Add(center, (Vector3) { 0.f, 0.25f, 0.f }), 0.1f, 0.75f, 0.1f, BLUE);
                             DrawCube(Vector3Add(center, (Vector3) { 0.f, 0.0f, 0.25f }), 0.1f, 0.1f, 0.75f, GREEN);
                         }

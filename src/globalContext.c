@@ -48,7 +48,7 @@ typedef struct globalContext
     float m_ambient;
     uint32_t m_ambientLoc;
 
-    int m_outlineSize;
+    uint16_t m_outlineSize;
     gizmo_t m_gizmoSelected;
     bool m_bbxChecked : 1;
 } globalContext_t;
