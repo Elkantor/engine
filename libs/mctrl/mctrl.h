@@ -23,26 +23,27 @@
 #ifndef MCTRL_H
 #define MCTRL_H
 
-#define UNICODE
-#define _UNICODE
-#define _CRT_NON_CONFORMING_SWPRINTFS
-#define _CRT_SECURE_NO_WARNINGS
+const GUID far GUID_WICPixelFormat32bppPBGRA = { 0x6fddc324, 0x4e03, 0x4bfe, { 0xb1, 0x85, 0x3d, 0x77, 0x76, 0x8d, 0xc9, 0x10 } };
+const GUID far CLSID_WICImagingFactory = { 0xcacaf262, 0x9370, 0x4615, { 0xa1, 0x3b, 0x9f, 0x55, 0x39, 0xda, 0x4c, 0x0a } };
+const GUID far CLSID_WICImagingFactory1 = { 0xcacaf262, 0x9370, 0x4615, { 0xa1, 0x3b, 0x9f, 0x55, 0x39, 0xda, 0x4c, 0x0a } };
+const GUID far CLSID_WICImagingFactory2 = { 0x317d06e8, 0x5f24, 0x433d, { 0xbd, 0xf7, 0x79, 0xce, 0x68, 0xd8, 0xab, 0xc2 } };
+const GUID far IID_IWICImagingFactory = { 0xec5ec8a9, 0xc395, 0x4314, { 0x9c, 0x77, 0x54, 0xd7, 0xa9, 0x35, 0xff, 0x70 } };
 
-#include "mCtrl/_defs.h"
-#include "mCtrl/_common.h"
-#include "mCtrl/button.h"
-#include "mCtrl/chart.h"
-#include "mCtrl/dialog.h"
-#include "mCtrl/expand.h"
-#include "mCtrl/grid.h"
-#include "mCtrl/html.h"
-#include "mCtrl/imgview.h"
-#include "mCtrl/mditab.h"
-#include "mCtrl/mdview.h"
-#include "mCtrl/menubar.h"
-#include "mCtrl/table.h"
-#include "mCtrl/treelist.h"
-#include "mCtrl/version.h"
+#include "./mCtrl/_defs.h"
+#include "./mCtrl/_common.h"
+#include "./mCtrl/button.h"
+#include "./mCtrl/chart.h"
+#include "./mCtrl/dialog.h"
+#include "./mCtrl/expand.h"
+#include "./mCtrl/grid.h"
+#include "./mCtrl/html.h"
+#include "./mCtrl/imgview.h"
+#include "./mCtrl/mditab.h"
+#include "./mCtrl/mdview.h"
+#include "./mCtrl/menubar.h"
+#include "./mCtrl/table.h"
+#include "./mCtrl/treelist.h"
+#include "./mCtrl/version.h"
 
 
 /**
