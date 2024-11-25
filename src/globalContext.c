@@ -29,13 +29,13 @@ typedef struct globalContext
     RenderTexture m_renderTextureForeground;
     Model meshGround;
     Model meshCube;
-    Model churchMesh;
+    //Model churchMesh;
     Texture2D churchTextureDiffuse;
 
     // Graveyard
-    Model m_graveyardTreeDecoratedMesh;
-    Model m_graveyardPineLargeMesh;
-    Model m_graveyardArchGateMesh;
+    // Model m_graveyardTreeDecoratedMesh;
+    // Model m_graveyardPineLargeMesh;
+    // Model m_graveyardArchGateMesh;
 
     Model* meshSelected;
     BoundingBox bbxSelected;

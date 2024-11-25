@@ -19,14 +19,14 @@ typedef struct
 {
 	void* m_monitorHandle;
 	string32_t m_name;
-	int m_index;
+	u32 m_index;
     int m_x;
     int m_y;
-    int m_width;
-    int m_height;
+    u32 m_width;
+    u32 m_height;
     int m_ppi;
-    int m_frequency;
-    int m_bpp;
+    u32 m_frequency;
+    u32 m_bpp;
 	bool m_primary;
     bool m_available;
     bool m_modeChanged;

@@ -1,23 +1,43 @@
 #pragma once
 
 #include <stdint.h>
+#include "../../moduleHelper.c"
 
-/******************************************** VARIABLES ****************************************************/
-static char internalMemoryStackBytesStack[512 * 1024];
-static uint32_t internalMemoryStackBytesAllocated = 0;
+#undef module
+#define module memoryStack
 
-
-/******************************************** PROCEDURES ***************************************************/
-void* memoryStackAlloc(const uint32_t _bytes)
+typedef struct memoryStackStruct
 {
-    char* pointedAddress = internalMemoryStackBytesStack + internalMemoryStackBytesAllocated;
-    internalMemoryStackBytesAllocated += _bytes;
-    return (void*) pointedAddress;
+    char m_bytesStack[512 * 1024];
+    uint32_t m_bytesAllocated;
+} memoryStackStruct;
+
+fn(void*, push, memoryStackStruct* _stack, const uint32_t _bytes)
+{
+    char* address = _stack->m_bytesStack + _stack->m_bytesAllocated;
+    _stack->m_bytesAllocated += _bytes;
+    return (void*)address;
 }
+end(push)
 
-void memoryStackDealloc(void* _value)
+fn(void, pop, memoryStackStruct* _stack, void* _value)
 {
-    void* currentAddressAvailable = internalMemoryStackBytesStack + internalMemoryStackBytesAllocated;
+    void* currentAddressAvailable = _stack->m_bytesStack + _stack->m_bytesAllocated;
     const uintptr_t numberDeallocated = (!!(uintptr_t)_value) * (uintptr_t)currentAddressAvailable - (uintptr_t)_value;
-    internalMemoryStackBytesAllocated -= numberDeallocated;
+    _stack->m_bytesAllocated -= numberDeallocated;
 }
+end(pop)
+
+fn(void, swap, memoryStackStruct* restrict * _stackA, memoryStackStruct* restrict * _stackB)
+{
+    memoryStackStruct* tmp = *_stackA;
+    *_stackA = *_stackB;
+    *_stackB = tmp;
+}
+end(swap)
+
+module_export(
+    push,
+    pop,
+    swap
+)

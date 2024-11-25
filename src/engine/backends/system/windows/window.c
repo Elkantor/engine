@@ -1,8 +1,9 @@
 #pragma once
 
 #include <stddef.h>
+#define WIN32_LEAN_AND_MEAN 1
 #include <Windows.h>
-#include <WinUser.h>
+
 #include <stdint.h>
 #include <string.h>
 #include <windef.h>
@@ -13,7 +14,7 @@
 #include "../../../utils/recti32_t.c"
 #include "../../../system.c"
 
-void windowInit(windowArray_t* _windows, const uint32_t _index, const int _width, const int _height, const char* _name, const windowMode_t _mode, const windowFeature_t _features, void* _ownerHandle)
+void windowInit(windowArray_t* _windows, const uint32_t _index, const u32 _width, const u32 _height, const char* _name, const windowMode_t _mode, const windowFeature_t _features, void* _ownerHandle)
 {
 	windowData_t* windowData = &_windows->m_data[_windows->m_size];
 
@@ -93,8 +94,8 @@ void windowHTMLAdd(windowArray_t* _windows, const uint32_t _index, const string3
 	
 	RECT clientRect;
 	GetWindowRect(windowData->m_handle, &clientRect);
-	const uint32_t width = clientRect.right - clientRect.left;
-	const uint32_t height = clientRect.bottom - clientRect.top;
+	const u32 width = (u32)(clientRect.right - clientRect.left);
+	const u32 height = (u32)(clientRect.bottom - clientRect.top);
 
 	SendMessage(windowData->m_handle, WM_SIZE, SIZE_RESTORED, width << 16 | height);
 }
@@ -114,7 +115,7 @@ void windowFocusHandle(windowArray_t* _windows)
 
 		if (PtInRect(&windowRect, cursor))
 		{
-			const uint32_t index = windowIndexGet(_windows, window);
+			const u32 index = windowIndexGet(_windows, window);
 			
 			if (index == UINT32_MAX)
 			{
@@ -126,23 +127,18 @@ void windowFocusHandle(windowArray_t* _windows)
 
 				if (childWindow != NULL)
 				{
-					const uint32_t index = windowIndexGet(_windows, childWindow);
+					const u32 childIndex = windowIndexGet(_windows, childWindow);
 
-					if (index != UINT32_MAX)
+					if (childIndex != UINT32_MAX)
 					{
-						printf("Focusing child: %d\n", index);
-						windowFocus(&_windows->m_data[index]);
+						printf("Focusing child: %d\n", childIndex);
+						windowFocus(&_windows->m_data[childIndex]);
 					}
 				}
 				else
 				{
-					const uint32_t index = windowIndexGet(_windows, window);
-
-					if (index != UINT32_MAX)
-					{
-						printf("Focusing window: %d\n", index);
-						windowFocus(&_windows->m_data[index]);
-					}
+					printf("Focusing window: %d\n", index);
+					windowFocus(&_windows->m_data[index]);
 				}
 			}
 		}
@@ -157,7 +153,7 @@ LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LP
 		{
 			if (k_windows->m_size > 0)
 			{
-				const uint32_t windowIndex = windowIndexGet(k_windows, _hWnd);
+				const u32 windowIndex = windowIndexGet(k_windows, _hWnd);
 				if (windowIndex == UINT32_MAX) break;
 
 				windowData_t* window = &k_windows->m_data[windowIndex];
@@ -175,7 +171,7 @@ LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LP
 
 			if (k_windows->m_size > 0)
 			{
-				const uint32_t windowIndex = windowIndexGet(k_windows, _hWnd);
+				const u32 windowIndex = windowIndexGet(k_windows, _hWnd);
 				if (windowIndex == UINT32_MAX) break;
 
 				windowData_t* window = &k_windows->m_data[windowIndex];
@@ -210,7 +206,8 @@ LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LP
 		}
 		case WM_SIZE:
 		{
-			uint32_t windowIndex = windowIndexGet(k_windows, _hWnd);
+			u32 windowIndex = windowIndexGet(k_windows, _hWnd);
+			
 			if (windowIndex == UINT32_MAX)
 			{
 				windowIndex = k_windows->m_size;
@@ -222,13 +219,13 @@ LRESULT WINAPI windowsMessageProcedure(HWND _hWnd, UINT _msg, WPARAM _wParam, LP
 			{
 				RECT clientRect;
 				GetWindowRect(window->m_handle, &clientRect);
-				const uint32_t width = clientRect.right - clientRect.left;
-				const uint32_t height = clientRect.bottom - clientRect.top;
+				const i32 width = clientRect.right - clientRect.left;
+				const i32 height = clientRect.bottom - clientRect.top;
 				SetWindowPos(window->m_uiHandle, NULL, 0, 0, width, height, SWP_NOZORDER);
 			}
 
-			const int width = LOWORD(_lParam);
-			const int height = HIWORD(_lParam);
+			const u32 width = LOWORD(_lParam);
+			const u32 height = HIWORD(_lParam);
 
 			window->m_width = width;
 			window->m_height = height;
@@ -395,8 +392,8 @@ recti32_t windowRectCalculate(const windowData_t* _windowData, const displayData
 		// NOTE(Victor): Check if outside of the screen if app is in windowed mode, to place it correclty inside the screen borders
 		const int dstx = _display->m_x + _windowData->m_x < 0 ? (_display->m_width - _windowData->m_width) / 2 : _windowData->m_x;
 		const int dsty = _display->m_y + _windowData->m_y < 0 ? (_display->m_height - _windowData->m_height) / 2 : _windowData->m_y;
-		const int dstw = _windowRect->right - _windowRect->left;
-		const int dsth = _windowRect->bottom - _windowRect->top;
+		const u32 dstw = (u32)(_windowRect->right - _windowRect->left);
+		const u32 dsth = (u32)(_windowRect->bottom - _windowRect->top);
 
 		return (recti32_t)
 		{
@@ -410,8 +407,8 @@ recti32_t windowRectCalculate(const windowData_t* _windowData, const displayData
 	{
 		const int dstx = _display->m_x;
 		const int dsty = _display->m_y;
-		const int dstw = _display->m_width;
-		const int dsth = _display->m_height;
+		const u32 dstw = _display->m_width;
+		const u32 dsth = _display->m_height;
 
 		return (recti32_t)
 		{
@@ -425,8 +422,8 @@ recti32_t windowRectCalculate(const windowData_t* _windowData, const displayData
 	{
 		const int dstx = _display->m_x;
 		const int dsty = _display->m_y;
-		const int dstw = _windowData->m_width;
-		const int dsth = _windowData->m_height;
+		const u32 dstw = _windowData->m_width;
+		const u32 dsth = _windowData->m_height;
 
 		return (recti32_t)
 		{
@@ -449,7 +446,7 @@ void windowCreate(displayDataArray_t* _displays, windowData_t* _windowData, cons
 		RegisterWindowClass(inst, windowClassName);
 	}
 
-	const int displayIndex = _windowData->m_displayIndex;
+	const u32 displayIndex = _windowData->m_displayIndex;
 
 	if (_windowData->m_mode == WINDOW_MODE_FULLSCREEN_EXCLUSIVE) 
 	{
@@ -463,24 +460,24 @@ void windowCreate(displayDataArray_t* _displays, windowData_t* _windowData, cons
 
 	RECT windowRect;
 	windowRect.left = 0;
-	windowRect.right = _windowData->m_width;
+	windowRect.right = (i32)_windowData->m_width;
 	windowRect.top = 0;
-	windowRect.bottom = _windowData->m_height;
+	windowRect.bottom = (i32)_windowData->m_height;
 	AdjustWindowRectEx(&windowRect, dwStyle, false, dwExStyle);
 	
 	const recti32_t finalRect = windowRectCalculate(_windowData, display, &windowRect);
 
 	_windowData->m_x = finalRect.m_x;
 	_windowData->m_y = finalRect.m_y;
-	_windowData->m_width = finalRect.m_width;
-	_windowData->m_height = finalRect.m_height;
+	_windowData->m_width = (u32)finalRect.m_width;
+	_windowData->m_height = (u32)finalRect.m_height;
 
 	// Create the window
 	{
 		char classNameUTF8[256] = { 0 };
 		WideCharToMultiByte(CP_UTF8, 0, windowClassName, -1, classNameUTF8, 256 - 1, NULL, NULL);
 
-		_windowData->m_handle = CreateWindowExA(dwExStyle, classNameUTF8, _windowData->m_title, dwStyle, finalRect.m_x, finalRect.m_y, finalRect.m_width, finalRect.m_height, _ownerHandle, NULL, inst, NULL);
+		_windowData->m_handle = CreateWindowExA(dwExStyle, classNameUTF8, _windowData->m_title, dwStyle, finalRect.m_x, finalRect.m_y, (i32)finalRect.m_width, (i32)finalRect.m_height, _ownerHandle, NULL, inst, NULL);
 	}
 	
 	SetCursor(LoadCursor(0, IDC_ARROW));

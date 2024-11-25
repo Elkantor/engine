@@ -67,8 +67,8 @@ BOOL CALLBACK EnumerationCallback(HMONITOR _monitor, HDC _hdcUnused, LPRECT _rec
         current->m_available = true;
         current->m_x = info.rcMonitor.left;
         current->m_y = info.rcMonitor.top;
-        current->m_width = info.rcMonitor.right - info.rcMonitor.left;
-        current->m_height = info.rcMonitor.bottom - info.rcMonitor.top;
+        current->m_width = (u32)(info.rcMonitor.right - info.rcMonitor.left);
+        current->m_height = (u32)(info.rcMonitor.bottom - info.rcMonitor.top);
 
         HDC hdc = CreateDCA(NULL, current->m_name.m_data, NULL, NULL);
         current->m_ppi = GetDeviceCaps(hdc, LOGPIXELSX);

@@ -8,7 +8,6 @@
 #include "window.c"
 #include "display.c"
 #include "../../../window.c"
-#include "../../../graphics.c"
 #include "../../../system.c"
 
 typedef BOOL(__stdcall *miniDumpWriteFunc)(IN HANDLE hProcess, IN DWORD ProcessId, IN HANDLE hFile, IN MINIDUMP_TYPE DumpType,
@@ -67,9 +66,9 @@ bool internalMessagesHandle(void)
 	return true;
 }
 
-bool internalFrame(app_t* _app, globalContext_t* _globalContext)
+bool internalFrame(app_t* _app, memoryStackStruct* restrict _previousFrame, memoryStackStruct* _currentFrame)
 {
-	appUpdate(_app, _globalContext);
+	appUpdate(_app, _previousFrame, _currentFrame);
 	internalMessagesHandle();
 
 	return _app->m_running;
@@ -82,11 +81,11 @@ void appStop(app_t* _app)
 	_app->m_running = false;
 }
 
-void appStart(app_t* _app, globalContext_t* _globalContext)
+void appStart(app_t* _app, memoryStackStruct* restrict _previousFrame, memoryStackStruct* restrict _currentFrame)
 {
 	_app->m_running = true;
 
-	while (internalFrame(_app, _globalContext)) 
+	while (internalFrame(_app, _previousFrame, _currentFrame)) 
 	{
 	}
 
@@ -111,11 +110,11 @@ void appInit(app_t* _app, const char* _name)
 	}
 }
 
-uint64_t appStackSizeGet(void)
+u64 appStackSizeGet(void)
 {
-	uint64_t low, high;
+	u64 low, high;
 	GetCurrentThreadStackLimits(&low, &high);
-	const uint64_t remaining = (uint64_t)(&low) - low;
+	const u64 remaining = (u64)(&low) - low;
 
 	return remaining;
 }
@@ -141,7 +140,7 @@ void appPathAbsoluteGet(wString256_t* _outPath)
 			else
 			{
 				_outPath->m_data[len - 1] = L'\0';
-				_outPath->m_size = len - 1;
+				_outPath->m_size = (u32)(len - 1);
 				break;
 			}
 		}
@@ -154,7 +153,7 @@ void appClipboardCopy(const wchar_t* _text, const size_t _len)
 
 	EmptyClipboard();
 
-	// Allouer de la mémoire pour la chaîne
+	// Allouer de la mï¿½moire pour la chaï¿½ne
 	HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, sizeof(*_text) * (_len + 1));
 	if (hMem == NULL) { CloseClipboard(); return; }
 

@@ -8,12 +8,12 @@
 #include "display.c"
 #include "string/wString256.c"
 
-typedef struct globalContext globalContext_t;
+typedef struct memoryStackStruct memoryStackStruct;
 
 typedef struct
 {
-    int m_data[256];
-    uint32_t m_size;
+    i32 m_data[256];
+    u32 m_size;
 } keysPressedArray_t;
 
 uint32_t keysPressedArrayCapacityGet(void)
@@ -26,8 +26,8 @@ typedef struct app
 	char m_name[256];
 	displayDataArray_t m_displays;
     keysPressedArray_t m_keysPressed;
-	int64_t m_frequency;
-	int64_t m_startCount;
+	i64 m_frequency;
+	i64 m_startCount;
 	bool m_running;
 } app_t;
 
@@ -38,8 +38,8 @@ uint32_t appNameCapacityGet(void)
 
 
 int appKickstart(int _argc, char** _argv);
-void appUpdate(app_t* _app, globalContext_t* _globalContext);
-void appStart(app_t* _app, globalContext_t* _globalContext);
+void appUpdate(app_t* _app, memoryStackStruct* restrict _previousStack, memoryStackStruct* _currentStack);
+void appStart(app_t* _app, memoryStackStruct* restrict _previousStack, memoryStackStruct* restrict _currentStack);
 void appStop(app_t* _app);
 void appInit(app_t* _app, const char* _name);
 void appPathAbsoluteGet(wString256_t* _outPath);

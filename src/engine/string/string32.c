@@ -11,10 +11,10 @@ typedef struct
         char m_data[32];
         const char* m_span;
     };
-    uint32_t m_size;
+    u32 m_size;
 } string32_t;
 
-uint32_t string32CapacityGet(void)
+u32 string32CapacityGet(void)
 {
     return offsetof(string32_t, m_size) / sizeof(char);
 }
@@ -27,7 +27,7 @@ string32_t string32Init(const char* _from)
     }
     else
     {
-        return (string32_t){ .m_span = _from, .m_size = strnlen_s(_from, 32) };
+        return (string32_t){ .m_span = _from, .m_size = (u32)strnlen_s(_from, 32) };
     }
 }
 
@@ -46,9 +46,10 @@ const char* const string32DataGet(const string32_t* _string)
     return data;
 }
 
-uint64_t string32Hash(const string32_t* _string)
+u64 string32Hash(const string32_t* _string)
 {
-    const char* data;
+    const char* data = NULL;
+
     if (_string->m_data[0] == *_string->m_span)
     {
         data = (char*)_string->m_data;
@@ -58,8 +59,9 @@ uint64_t string32Hash(const string32_t* _string)
         data = _string->m_span;
     }
 
-    uint64_t hash = 14695981039346656037UL;
-    uint8_t  c = data[0];
+    u64 hash = 14695981039346656037UL;
+    char c = data[0];
+
     for (size_t i = 0; i < 64; i++) {
         if (i < _string->m_size)
         {
@@ -69,7 +71,7 @@ uint64_t string32Hash(const string32_t* _string)
         {
             c = 0;
         }
-        hash = (hash ^ c) * 1099511628211;
+        hash = (hash ^ (u64)c) * 1099511628211;
     }
     return hash;
 }

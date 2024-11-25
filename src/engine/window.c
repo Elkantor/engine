@@ -28,8 +28,8 @@ typedef enum
 
 typedef struct
 {
-	int m_frequency;
-	int m_colorBits;
+	u32 m_frequency;
+	u32 m_colorBits;
 	int m_depthBits;
 	int m_stencilBits;
 	int m_samplesPerPixel;
@@ -52,15 +52,15 @@ typedef struct windowData
 	const char* m_title;
 	void* m_handle;
 	void* m_uiHandle;
-	int m_x;
-	int m_y;
-	int m_width;
-	int m_height;
-	int m_displayIndex;
-	int m_windowFeatures;
+	i32 m_x;
+	i32 m_y;
+	u32 m_width;
+	u32 m_height;
+	u32 m_displayIndex;
+	i32 m_windowFeatures;
 	windowMode_t m_mode;
+	u32 m_graphicIndex;
 	bool m_visible;
-	uint32_t m_graphicIndex;
 } windowData_t;
 
 void windowDataDefaultSet(windowData_t* _win)
@@ -83,7 +83,7 @@ void windowDataDefaultSet(windowData_t* _win)
 typedef struct
 {
     windowData_t m_data[8]; // 8 windows max for an app
-    uint32_t m_size;
+    u32 m_size;
 
 	app_t* m_app; // Windows are attached to an app, without the app, windows make no sense
 } windowArray_t;
@@ -99,7 +99,7 @@ void windowArrayInit(app_t* _app, windowArray_t* _windows)
 {
 	memset(_windows, 0, sizeof(windowArray_t));
 
-	for (uint32_t i = 0; i < windowArrayCapacityGet(); ++i)
+	for (u32 i = 0; i < windowArrayCapacityGet(); ++i)
 	{
 		_windows->m_data[i].m_graphicIndex = UINT32_MAX;
 	}
@@ -108,18 +108,18 @@ void windowArrayInit(app_t* _app, windowArray_t* _windows)
 	k_windows = _windows;
 }
 
-void windowInit(windowArray_t* _windows, const uint32_t _index, const int _width, const int _height, const char* _name, const windowMode_t _mode, const windowFeature_t _features, void* _ownerHandle);
+void windowInit(windowArray_t* _windows, const u32 _index, const u32 _width, const u32 _height, const char* _name, const windowMode_t _mode, const windowFeature_t _features, void* _ownerHandle);
 void windowCreate(displayDataArray_t* _displays, windowData_t* _windowData, const bool _appInitialized, void* _ownerHandle);
 void windowShow(windowData_t* _window);
 void windowHide(windowData_t* _window);
 void windowDestroy(windowArray_t* _windows, void* _handle);
-uint32_t windowIndexGet(windowArray_t* _windows, void* _handle);
-void windowHTMLAdd(windowArray_t* _windows, const uint32_t _index, const string32_t* _path);
+u32 windowIndexGet(windowArray_t* _windows, void* _handle);
+void windowHTMLAdd(windowArray_t* _windows, const u32 _index, const string32_t* _path);
 
 void windowFocusHandle(windowArray_t* _windows);
 
 // User implemenatations
-void windowResize(windowData_t* _window, const int _width, const int _height);
+void windowResize(windowData_t* _window, const u32 _width, const u32 _height);
 int windowPaint(windowData_t* _window);
 void windowNotify(windowData_t* _window, void* _data);
 void windowFocus(windowData_t* _window);

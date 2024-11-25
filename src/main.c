@@ -1,15 +1,11 @@
 #include <stdio.h>
 
-#include "engine/utils/memory/memoryStack.c"
 #include "appconfig.c"
 
+static memoryStack stack1;
 static app_t app;
-static globalContext_t globalContext = { 0 };
+static globalContext_t* globalContext = (globalContext_t*) & stack1;
 static void* handleLib = NULL;
-
-// NOTE(Victor): build with mingw on windows:
-// gcc src/main.c -g -Wall -Werror -lmCtrl -lcomctl32 -lDwmapi -lwinmm -lgdi32 -lopengl32 -lraylib -L./libs/raylib -L./libs/mctrl
-// devenv a.exe (to open visual studio debugger)
 
 // NOTE(Victor): build with zig cc (clang) compiler on windows:
 // zig cc src/main.c -g -Wall -Werror -lmCtrl -lcomctl32 -lDwmapi -lwinmm -lgdi32 -lopengl32 -lraylib -L./libs/raylib -L./libs/mctrl
@@ -40,21 +36,6 @@ void windowResize(windowData_t* _window, const int _width, const int _height)
             const int raylibWindowWidth = mainWindowWith * 0.7f;
             SetWindowPos(GetWindowHandle(), HWND_TOP, 0, 0, raylibWindowWidth, _height, SWP_DRAWFRAME);
             SetWindowSize(raylibWindowWidth, _height);
-            
-            UnloadRenderTexture(globalContext.renderTexture);
-            globalContext.renderTexture = LoadRenderTexture(raylibWindowWidth, _height);
-
-            UnloadRenderTexture(globalContext.m_renderTextureForeground);
-            globalContext.m_renderTextureForeground = LoadRenderTexture(raylibWindowWidth, _height);
-
-            const int screenWidth = raylibWindowWidth;
-            const int screenHeight = _height;
-
-            SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "width"), &screenWidth, SHADER_UNIFORM_INT);
-            SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "height"), &screenHeight, SHADER_UNIFORM_INT);
-
-            SetShaderValue(globalContext.gizmoShader, GetShaderLocation(globalContext.gizmoShader, "width"), &screenWidth, SHADER_UNIFORM_INT);
-            SetShaderValue(globalContext.gizmoShader, GetShaderLocation(globalContext.gizmoShader, "height"), &screenHeight, SHADER_UNIFORM_INT);
         }
 
         // HUD always on top
@@ -67,14 +48,14 @@ void windowFocus(windowData_t* _window)
     const char* mainWindow = "First Window";
     const char* toolWindow = "Tool Window";
     
-    if ((uintptr_t)_window->m_title == (uintptr_t)mainWindow)
+    if ((uPtr)_window->m_title == (uPtr)mainWindow)
     {
         if (GetWindowHandle() != NULL)
         {
             SetWindowFocused();
         }
     }
-    else if ((uintptr_t)_window->m_title == (uintptr_t)toolWindow)
+    else if ((uPtr)_window->m_title == (uPtr)toolWindow)
     {
         if (_window->m_uiHandle != NULL)
         {
@@ -93,7 +74,7 @@ void windowNotify(windowData_t* _window, void* _data)
     {
         MC_NMHTMLURLW* nmhtmlurl = (MC_NMHTMLURLW*)hdr;
         const string32_t value = string32Init((const char*)nmhtmlurl->pszUrl);
-        const uint64_t hash = string32Hash(&value);
+        const u64 hash = string32Hash(&value);
 
         switch (hash)
         {
@@ -102,109 +83,9 @@ void windowNotify(windowData_t* _window, void* _data)
                 windowFocus(_window);
                 break;
             }
-            case string32HashConst("app:bbxSet"):
-            {
-                if (globalContext.meshSelected != NULL)
-                {
-                    int value = 0;
-                    uiBinderI32(&value, L"boundingBoxGet", _window->m_uiHandle);
-                    globalContext.m_bbxChecked = value;
-                }
-                break;
-            }
-            case string32HashConst("app:transformSet"):
-            {
-                if (globalContext.meshSelected != NULL)
-                {
-                    Vector3 transform = Vector3Zero();
-                    uiBinderVector3(&transform, L"transformGet", _window->m_uiHandle);
-
-                    globalContext.meshSelected->transform.m12 = transform.x;
-                    globalContext.meshSelected->transform.m13 = transform.y;
-                    globalContext.meshSelected->transform.m14 = transform.z;
-
-                    const BoundingBox selected = GetModelBoundingBox(*globalContext.meshSelected);
-                    Vector3 pos = extractTranslation(&globalContext.meshSelected->transform);
-                    const BoundingBox afterPos =
-                    {
-                        .min = (Vector3) { selected.min.x + pos.x, selected.min.y + pos.y, selected.min.z + pos.z },
-                        .max = (Vector3) { selected.max.x + pos.x, selected.max.y + pos.y, selected.max.z + pos.z },
-                    };
-                    globalContext.bbxSelected = afterPos;
-                }
-
-                break;
-            }
             case string32HashConst("app:SayHello"):
             {
                 MessageBoxA(_window->m_handle, "Button Clicked", "Button Clicked!", MB_OK);
-                break;
-            }
-            case string32HashConst("app:gamma"):
-            {
-                windowFocus(&k_windows->m_data[0]);
-                
-                uiBinderF32(&globalContext.m_gamma, L"gammaGet", _window->m_uiHandle);
-                SetShaderValue(globalContext.mainShader, globalContext.m_gammaLoc, &globalContext.m_gamma, SHADER_UNIFORM_FLOAT);
-                break;
-            }
-            case string32HashConst("app:ambient"):
-            {
-                windowFocus(&k_windows->m_data[0]);
-
-                uiBinderF32(&globalContext.m_ambient, L"ambientGet", _window->m_uiHandle);
-                SetShaderValue(globalContext.mainShader, globalContext.m_ambientLoc, (float[4]) { globalContext.m_ambient, globalContext.m_ambient, globalContext.m_ambient, 1.f }, SHADER_UNIFORM_VEC4);
-                break;
-            }
-            case string32HashConst("app:HUDClicked"):
-            {
-                MessageBoxA(_window->m_handle, "Button Clicked", "Button Clicked!", MB_OK);
-                windowFocus(&k_windows->m_data[0]);
-
-                if (handleLib != NULL)
-                {
-                    const string32_t function = string32Init("release");
-                    int (*func)(void) = hotReloadSymbolGet(handleLib, &function);
-                    func();
-
-                    hotReloadLibDelete(handleLib);
-                    handleLib = NULL;
-                }
-
-                const string32_t file = string32Init("./src/test.c");
-                void* lib = hotReloadLibNew(&file);
-                
-                if (lib != NULL)
-                {
-                    handleLib = lib;
-
-                    printf("hot reloaded\n");
-
-                    const string32_t function = string32Init("main");
-                    int (*func)(int _argc, char* _argv[]) = hotReloadSymbolGet(handleLib, &function);
-
-                    if (func != NULL)
-                    {
-                        func(1, (char*[]) { "thread" });
-                    }
-                }
-
-                break;
-            }
-            case string32HashConst("app:CopyClipboardAvatar"):
-            {
-                MC_HMCALLSCRIPTFUNC csfArgs;
-                WCHAR pszRetVal[128];
-
-                csfArgs.cbSize = sizeof(MC_HMCALLSCRIPTFUNC);
-                csfArgs.pszRet = pszRetVal;
-                csfArgs.iRet = sizeof(pszRetVal) / sizeof(pszRetVal[0]);
-                csfArgs.cArgs = 1;
-                csfArgs.pszArg1 = L"avatar";
-                windowData_t* window = &k_windows->m_data[1];
-                SendMessageW(window->m_uiHandle, MC_HM_CALLSCRIPTFUNC, (WPARAM)L"getCopiedValue", (LPARAM)&csfArgs);
-
-                appClipboardCopy(pszRetVal, wcsnlen_s(pszRetVal, 128));
                 break;
             }
             default:
@@ -345,28 +226,28 @@ void appUpdate(app_t* _app, globalContext_t* _global)
                 {
                     case colorGizmoTransformX:
                     {
-                        globalContext.m_gizmoSelected = GIZMO_TRANSFORM_X;
+                        _global->m_gizmoSelected = GIZMO_TRANSFORM_X;
                         break;
                     }
                     case colorGizmoTransformY:
                     {
-                        globalContext.m_gizmoSelected = GIZMO_TRANSFORM_Y;
+                        _global->m_gizmoSelected = GIZMO_TRANSFORM_Y;
                         break;
                     }
                     case colorGizmoTransformZ:
                     {
-                        globalContext.m_gizmoSelected = GIZMO_TRANSFORM_Z;
+                        _global->m_gizmoSelected = GIZMO_TRANSFORM_Z;
                         break;
                     }
                     default:
                     {
-                        globalContext.m_gizmoSelected = GIZMO_NONE;
+                        _global->m_gizmoSelected = GIZMO_NONE;
                         break;
                     }
                 }
             }
 
-            if (globalContext.m_gizmoSelected == GIZMO_NONE)
+            if (_global->m_gizmoSelected == GIZMO_NONE)
             {
                 Image image = LoadImageFromTexture(_global->renderTexture.texture);
                 image.format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
@@ -376,7 +257,7 @@ void appUpdate(app_t* _app, globalContext_t* _global)
                 const uint16_t id = convertFloat3ArrayToUint16(pickingColor);
 
                 const float pickingColorNorm[4] = { (float)colorPicked.r / 255.f, (float)colorPicked.g / 255.f, (float)colorPicked.b / 255.f, (float)colorPicked.a / 255.f };
-                SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "pickingColor"), &pickingColorNorm, SHADER_UNIFORM_VEC4);
+                SetShaderValue(_global->outlineShader, GetShaderLocation(_global->outlineShader, "pickingColor"), &pickingColorNorm, SHADER_UNIFORM_VEC4);
             
                 if (colorPicked.r != WHITE.r && colorPicked.g != WHITE.g && colorPicked.b != WHITE.b)
                 {
@@ -414,29 +295,29 @@ void appUpdate(app_t* _app, globalContext_t* _global)
             {
                 DrawModel(_global->meshGround, Vector3Zero(), 1.f, (Color) { 20, 20, 20, 255 });
 
-                // Church
-                {
-                    const Vector3 pos = extractTranslation(&_global->churchMesh.transform);
-                    DrawModel(_global->churchMesh, pos, 1.0f, WHITE);
-                }
+                // // Church
+                // {
+                //     const Vector3 pos = extractTranslation(&_global->churchMesh.transform);
+                //     DrawModel(_global->churchMesh, pos, 1.0f, WHITE);
+                // }
 
-                // Graveyard Dead Tree
-                {
-                    const Vector3 pos = extractTranslation(&_global->m_graveyardTreeDecoratedMesh.transform);
-                    DrawModel(_global->m_graveyardTreeDecoratedMesh, pos, 1.0f, WHITE);
-                }
+                // // Graveyard Dead Tree
+                // {
+                //     const Vector3 pos = extractTranslation(&_global->m_graveyardTreeDecoratedMesh.transform);
+                //     DrawModel(_global->m_graveyardTreeDecoratedMesh, pos, 1.0f, WHITE);
+                // }
 
-                // Graveyard Pine Orange Large
-                {
-                    const Vector3 pos = extractTranslation(&_global->m_graveyardPineLargeMesh.transform);
-                    DrawModel(_global->m_graveyardPineLargeMesh, pos, 1.0f, WHITE);
-                }
+                // // Graveyard Pine Orange Large
+                // {
+                //     const Vector3 pos = extractTranslation(&_global->m_graveyardPineLargeMesh.transform);
+                //     DrawModel(_global->m_graveyardPineLargeMesh, pos, 1.0f, WHITE);
+                // }
 
-                // Graveyard Pine Orange Large
-                {
-                    const Vector3 pos = extractTranslation(&_global->m_graveyardArchGateMesh.transform);
-                    DrawModel(_global->m_graveyardArchGateMesh, pos, 1.0f, WHITE);
-                }
+                // // Graveyard Pine Orange Large
+                // {
+                //     const Vector3 pos = extractTranslation(&_global->m_graveyardArchGateMesh.transform);
+                //     DrawModel(_global->m_graveyardArchGateMesh, pos, 1.0f, WHITE);
+                // }
 
                 // Cube
                 {
@@ -491,49 +372,49 @@ void appUpdate(app_t* _app, globalContext_t* _global)
                 ClearBackground(WHITE);
                 BeginMode3D(_global->camera);
 
-                // Church mesh
-                {
-                    static const uint16_t churchID = offsetof(globalContext_t, churchMesh);
-                    static float color[4] = { 0,[3] = 1.f };
-                    convertUint16ToFloat3Array(churchID, color);
-                    color[0] /= 255.f; color[1] /= 255.f; color[2] /= 255.f;
-                    SetShaderValue(_global->materialFlatColor.shader, _global->shaderFlatColorLoc, &color, SHADER_UNIFORM_VEC4);
-                    const Vector3 pos = extractTranslation(&_global->churchMesh.transform);
-                    DrawModelMat(_global->churchMesh, pos, 1.0f, WHITE, &_global->materialFlatColor);
-                }
+                // // Church mesh
+                // {
+                //     static const uint16_t churchID = offsetof(globalContext_t, churchMesh);
+                //     static float color[4] = { 0,[3] = 1.f };
+                //     convertUint16ToFloat3Array(churchID, color);
+                //     color[0] /= 255.f; color[1] /= 255.f; color[2] /= 255.f;
+                //     SetShaderValue(_global->materialFlatColor.shader, _global->shaderFlatColorLoc, &color, SHADER_UNIFORM_VEC4);
+                //     const Vector3 pos = extractTranslation(&_global->churchMesh.transform);
+                //     DrawModelMat(_global->churchMesh, pos, 1.0f, WHITE, &_global->materialFlatColor);
+                // }
 
-                // Graveyard Tree mesh
-                {
-                    static const uint16_t meshID = offsetof(globalContext_t, m_graveyardTreeDecoratedMesh);
-                    static float color[4] = { 0,[3] = 1.f };
-                    convertUint16ToFloat3Array(meshID, color);
-                    color[0] /= 255.f; color[1] /= 255.f; color[2] /= 255.f;
-                    SetShaderValue(_global->materialFlatColor.shader, _global->shaderFlatColorLoc, &color, SHADER_UNIFORM_VEC4);
-                    const Vector3 pos = extractTranslation(&_global->m_graveyardTreeDecoratedMesh.transform);
-                    DrawModelMat(_global->m_graveyardTreeDecoratedMesh, pos, 1.0f, WHITE, &_global->materialFlatColor);
-                }
+                // // Graveyard Tree mesh
+                // {
+                //     static const uint16_t meshID = offsetof(globalContext_t, m_graveyardTreeDecoratedMesh);
+                //     static float color[4] = { 0,[3] = 1.f };
+                //     convertUint16ToFloat3Array(meshID, color);
+                //     color[0] /= 255.f; color[1] /= 255.f; color[2] /= 255.f;
+                //     SetShaderValue(_global->materialFlatColor.shader, _global->shaderFlatColorLoc, &color, SHADER_UNIFORM_VEC4);
+                //     const Vector3 pos = extractTranslation(&_global->m_graveyardTreeDecoratedMesh.transform);
+                //     DrawModelMat(_global->m_graveyardTreeDecoratedMesh, pos, 1.0f, WHITE, &_global->materialFlatColor);
+                // }
 
-                // Graveyard Pine Orange Large
-                {
-                    static const uint16_t meshID = offsetof(globalContext_t, m_graveyardPineLargeMesh);
-                    static float color[4] = { 0,[3] = 1.f };
-                    convertUint16ToFloat3Array(meshID, color);
-                    color[0] /= 255.f; color[1] /= 255.f; color[2] /= 255.f;
-                    SetShaderValue(_global->materialFlatColor.shader, _global->shaderFlatColorLoc, &color, SHADER_UNIFORM_VEC4);
-                    const Vector3 pos = extractTranslation(&_global->m_graveyardPineLargeMesh.transform);
-                    DrawModelMat(_global->m_graveyardPineLargeMesh, pos, 1.0f, WHITE, &_global->materialFlatColor);
-                }
+                // // Graveyard Pine Orange Large
+                // {
+                //     static const uint16_t meshID = offsetof(globalContext_t, m_graveyardPineLargeMesh);
+                //     static float color[4] = { 0,[3] = 1.f };
+                //     convertUint16ToFloat3Array(meshID, color);
+                //     color[0] /= 255.f; color[1] /= 255.f; color[2] /= 255.f;
+                //     SetShaderValue(_global->materialFlatColor.shader, _global->shaderFlatColorLoc, &color, SHADER_UNIFORM_VEC4);
+                //     const Vector3 pos = extractTranslation(&_global->m_graveyardPineLargeMesh.transform);
+                //     DrawModelMat(_global->m_graveyardPineLargeMesh, pos, 1.0f, WHITE, &_global->materialFlatColor);
+                // }
 
-                // Graveyard Arch Gate
-                {
-                    static const uint16_t meshID = offsetof(globalContext_t, m_graveyardArchGateMesh);
-                    static float color[4] = { 0,[3] = 1.f };
-                    convertUint16ToFloat3Array(meshID, color);
-                    color[0] /= 255.f; color[1] /= 255.f; color[2] /= 255.f;
-                    SetShaderValue(_global->materialFlatColor.shader, _global->shaderFlatColorLoc, &color, SHADER_UNIFORM_VEC4);
-                    const Vector3 pos = extractTranslation(&_global->m_graveyardArchGateMesh.transform);
-                    DrawModelMat(_global->m_graveyardArchGateMesh, pos, 1.0f, WHITE, &_global->materialFlatColor);
-                }
+                // // Graveyard Arch Gate
+                // {
+                //     static const uint16_t meshID = offsetof(globalContext_t, m_graveyardArchGateMesh);
+                //     static float color[4] = { 0,[3] = 1.f };
+                //     convertUint16ToFloat3Array(meshID, color);
+                //     color[0] /= 255.f; color[1] /= 255.f; color[2] /= 255.f;
+                //     SetShaderValue(_global->materialFlatColor.shader, _global->shaderFlatColorLoc, &color, SHADER_UNIFORM_VEC4);
+                //     const Vector3 pos = extractTranslation(&_global->m_graveyardArchGateMesh.transform);
+                //     DrawModelMat(_global->m_graveyardArchGateMesh, pos, 1.0f, WHITE, &_global->materialFlatColor);
+                // }
 
                 // Cube mesh
                 {
@@ -579,6 +460,8 @@ int appKickstart(int argc, char **argv)
     mcHtml_Initialize();
     InitCommonControls();
 
+    globalContext_t* globalContext = MemoryStack.alloc(&stack1, sizeof(globalContext));
+
     appInit(&app, "My App");
     
     static windowArray_t windows;
@@ -608,151 +491,151 @@ int appKickstart(int argc, char **argv)
 
     // Initialize global context
     {
-        globalContext.camera.position = (Vector3){ 5.0f, 5.0f, 5.0f }; // Camera position
-        globalContext.camera.target = (Vector3){ 0.0f, 0.25f, 0.0f };      // Camera looking at point
-        globalContext.camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
-        globalContext.camera.fovy = 60.0f;                                // Camera field-of-view Y
-        globalContext.camera.projection = CAMERA_PERSPECTIVE;             // Camera projection type
+        globalContext->camera.position = (Vector3){ 5.0f, 5.0f, 5.0f }; // Camera position
+        globalContext->camera.target = (Vector3){ 0.0f, 0.25f, 0.0f };      // Camera looking at point
+        globalContext->camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
+        globalContext->camera.fovy = 60.0f;                                // Camera field-of-view Y
+        globalContext->camera.projection = CAMERA_PERSPECTIVE;             // Camera projection type
 
-        globalContext.mainShader = LoadShader("./src/lightning.vs", "./src/lightning.fs");
-        globalContext.mainShader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(globalContext.mainShader, "viewPos");
+        globalContext->mainShader = LoadShader("./src/lightning.vs", "./src/lightning.fs");
+        globalContext->mainShader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(globalContext->mainShader, "viewPos");
 
-        globalContext.m_outlineSize = 2;
-        globalContext.outlineShader = LoadShader(0, "./src/outline.fs");
+        globalContext->m_outlineSize = 2;
+        globalContext->outlineShader = LoadShader(0, "./src/outline.fs");
         const int screenWidth = GetScreenWidth();
         const int screenHeight = GetScreenHeight();
         const float outlineColor[4] = { 1, 0.63, 0, 1 }; // Orange
         const float pickingColor[4] = { WHITE.r/255, WHITE.g/255, WHITE.b/255, WHITE.a/255 };
-        SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "width"), &screenWidth, SHADER_UNIFORM_INT);
-        SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "height"), &screenHeight, SHADER_UNIFORM_INT);
-        SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "color"), outlineColor, SHADER_UNIFORM_VEC4);
-        SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "pickingColor"), pickingColor, SHADER_UNIFORM_VEC4);
-        SetShaderValue(globalContext.outlineShader, GetShaderLocation(globalContext.outlineShader, "size"), &globalContext.m_outlineSize, SHADER_UNIFORM_INT);
+        SetShaderValue(globalContext->outlineShader, GetShaderLocation(globalContext->outlineShader, "width"), &screenWidth, SHADER_UNIFORM_INT);
+        SetShaderValue(globalContext->outlineShader, GetShaderLocation(globalContext->outlineShader, "height"), &screenHeight, SHADER_UNIFORM_INT);
+        SetShaderValue(globalContext->outlineShader, GetShaderLocation(globalContext->outlineShader, "color"), outlineColor, SHADER_UNIFORM_VEC4);
+        SetShaderValue(globalContext->outlineShader, GetShaderLocation(globalContext->outlineShader, "pickingColor"), pickingColor, SHADER_UNIFORM_VEC4);
+        SetShaderValue(globalContext->outlineShader, GetShaderLocation(globalContext->outlineShader, "size"), &globalContext->m_outlineSize, SHADER_UNIFORM_INT);
 
-        globalContext.materialFlatColor = LoadMaterialDefault();
-        UnloadShader(globalContext.materialFlatColor.shader);
-        globalContext.materialFlatColor.shader = LoadShader(0, "./src/flatColor.fs");
-        globalContext.shaderFlatColorLoc = GetShaderLocation(globalContext.materialFlatColor.shader, "color");
+        globalContext->materialFlatColor = LoadMaterialDefault();
+        UnloadShader(globalContext->materialFlatColor.shader);
+        globalContext->materialFlatColor.shader = LoadShader(0, "./src/flatColor.fs");
+        globalContext->shaderFlatColorLoc = GetShaderLocation(globalContext->materialFlatColor.shader, "color");
 
-        globalContext.renderTexture = LoadRenderTexture(screenWidth, screenHeight);
-        globalContext.m_renderTextureForeground = LoadRenderTexture(screenWidth, screenHeight);
+        globalContext->renderTexture = LoadRenderTexture(screenWidth, screenHeight);
+        globalContext->m_renderTextureForeground = LoadRenderTexture(screenWidth, screenHeight);
 
-        globalContext.gizmoShader = LoadShader(0, "./src/gizmo.fs");
-        SetShaderValue(globalContext.gizmoShader, GetShaderLocation(globalContext.gizmoShader, "width"), &screenWidth, SHADER_UNIFORM_INT);
-        SetShaderValue(globalContext.gizmoShader, GetShaderLocation(globalContext.gizmoShader, "height"), &screenHeight, SHADER_UNIFORM_INT);
+        globalContext->gizmoShader = LoadShader(0, "./src/gizmo.fs");
+        SetShaderValue(globalContext->gizmoShader, GetShaderLocation(globalContext->gizmoShader, "width"), &screenWidth, SHADER_UNIFORM_INT);
+        SetShaderValue(globalContext->gizmoShader, GetShaderLocation(globalContext->gizmoShader, "height"), &screenHeight, SHADER_UNIFORM_INT);
         const float gizmoOutlineColor[] = {0.0f, 0.0f, 0.0f, 0.4f};
-        SetShaderValue(globalContext.gizmoShader, GetShaderLocation(globalContext.gizmoShader, "outlineColor"), &gizmoOutlineColor, SHADER_UNIFORM_VEC4);
+        SetShaderValue(globalContext->gizmoShader, GetShaderLocation(globalContext->gizmoShader, "outlineColor"), &gizmoOutlineColor, SHADER_UNIFORM_VEC4);
 
-        globalContext.m_ambient = 3.0f;
-        globalContext.m_ambientLoc = GetShaderLocation(globalContext.mainShader, "ambient");
-        SetShaderValue(globalContext.mainShader, globalContext.m_ambientLoc, (float[4]) { globalContext.m_ambient, globalContext.m_ambient, globalContext.m_ambient, 1.f }, SHADER_UNIFORM_VEC4);
+        globalContext->m_ambient = 3.0f;
+        globalContext->m_ambientLoc = GetShaderLocation(globalContext->mainShader, "ambient");
+        SetShaderValue(globalContext->mainShader, globalContext->m_ambientLoc, (float[4]) { globalContext->m_ambient, globalContext->m_ambient, globalContext->m_ambient, 1.f }, SHADER_UNIFORM_VEC4);
 
-        globalContext.m_gamma = 2.2f;
-        globalContext.m_gammaLoc = GetShaderLocation(globalContext.mainShader, "gamma");
-        SetShaderValue(globalContext.mainShader, globalContext.m_gammaLoc, &globalContext.m_gamma, SHADER_UNIFORM_FLOAT);
+        globalContext->m_gamma = 2.2f;
+        globalContext->m_gammaLoc = GetShaderLocation(globalContext->mainShader, "gamma");
+        SetShaderValue(globalContext->mainShader, globalContext->m_gammaLoc, &globalContext->m_gamma, SHADER_UNIFORM_FLOAT);
 
-        globalContext.meshGround = LoadModelFromMesh(GenMeshCube(100.0f, 100.0f, 1.0f));
-        globalContext.meshGround.materials[0].shader = globalContext.mainShader;
+        globalContext->meshGround = LoadModelFromMesh(GenMeshCube(100.0f, 100.0f, 1.0f));
+        globalContext->meshGround.materials[0].shader = globalContext->mainShader;
         const float angle90 = 90.f * DEG2RAD;
-        globalContext.meshGround.transform = MatrixMultiply(globalContext.meshGround.transform, MatrixRotateX(angle90));
-        globalContext.meshGround.transform.m13 = -0.5f; // set y
+        globalContext->meshGround.transform = MatrixMultiply(globalContext->meshGround.transform, MatrixRotateX(angle90));
+        globalContext->meshGround.transform.m13 = -0.5f; // set y
 
-        globalContext.meshCube = LoadModelFromMesh(GenMeshCube(1.0f, 1.0f, 1.0f));
-        globalContext.meshCube.materials[0].shader = globalContext.mainShader;
+        globalContext->meshCube = LoadModelFromMesh(GenMeshCube(1.0f, 1.0f, 1.0f));
+        globalContext->meshCube.materials[0].shader = globalContext->mainShader;
         {
             Matrix matScale = MatrixScale(1.0f, 1.0f, 1.0f);
             Matrix matRotation = MatrixRotate((Vector3){0.f, 0.f, 0.f}, 0.f);
             Matrix matTranslation = MatrixTranslate(0.f, 0.25f, 0.0f);
             Matrix matTransform = MatrixMultiply(MatrixMultiply(matScale, matRotation), matTranslation);
-            globalContext.meshCube.transform = matTransform;
+            globalContext->meshCube.transform = matTransform;
         }
 
-        globalContext.churchMesh = LoadModel("./res/models/church/churchMesh.obj");
-        globalContext.churchMesh.materials[0].shader = globalContext.mainShader;
-        globalContext.churchMesh.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = LoadTexture("./res/models/church/churchTextureDiffuse.png");
-        {
-            Matrix matScale = MatrixScale(0.1f, 0.1f, 0.1f);
-            Matrix matRotation = MatrixRotate((Vector3) { 0.f, 0.f, 0.f }, 0.f);
-            Matrix matTranslation = MatrixTranslate(0.0f, 0.f, 0.f);
-            Matrix matTransform = MatrixMultiply(MatrixMultiply(matScale, matRotation), matTranslation);
-            globalContext.churchMesh.transform = matTransform;
+        // globalContext->churchMesh = LoadModel("./res/models/church/churchMesh.obj");
+        // globalContext->churchMesh.materials[0].shader = globalContext->mainShader;
+        // globalContext->churchMesh.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = LoadTexture("./res/models/church/churchTextureDiffuse.png");
+        // {
+        //     Matrix matScale = MatrixScale(0.1f, 0.1f, 0.1f);
+        //     Matrix matRotation = MatrixRotate((Vector3) { 0.f, 0.f, 0.f }, 0.f);
+        //     Matrix matTranslation = MatrixTranslate(0.0f, 0.f, 0.f);
+        //     Matrix matTransform = MatrixMultiply(MatrixMultiply(matScale, matRotation), matTranslation);
+        //     globalContext->churchMesh.transform = matTransform;
 
-            BoundingBox bbx = GetModelBoundingBox(globalContext.churchMesh);
-            Vector3 originalAnchor = Vector3Divide(Vector3Add(bbx.min, bbx.max), (Vector3) { 2.0f, 2.0f, 2.0f });
-            globalContext.churchMesh.transform.m12 += originalAnchor.x;
-            globalContext.churchMesh.transform.m13 += 0.f;
-            globalContext.churchMesh.transform.m14 += originalAnchor.z; 
-        }
+        //     BoundingBox bbx = GetModelBoundingBox(globalContext->churchMesh);
+        //     Vector3 originalAnchor = Vector3Divide(Vector3Add(bbx.min, bbx.max), (Vector3) { 2.0f, 2.0f, 2.0f });
+        //     globalContext->churchMesh.transform.m12 += originalAnchor.x;
+        //     globalContext->churchMesh.transform.m13 += 0.f;
+        //     globalContext->churchMesh.transform.m14 += originalAnchor.z; 
+        // }
 
-        // Graveyard assets
-        {
-            const Texture2D graveYardTexture2D = LoadTexture("./res/models/graveyard/halloweenbits_texture.png");
+        // // Graveyard assets
+        // {
+        //     const Texture2D graveYardTexture2D = LoadTexture("./res/models/graveyard/halloweenbits_texture.png");
 
-            // Tree Decorated
-            {
-                globalContext.m_graveyardTreeDecoratedMesh = LoadModel("./res/models/graveyard/deadTreeDecorated/tree_dead_large_decorated.obj");
-                globalContext.m_graveyardTreeDecoratedMesh.materials[0].shader = globalContext.mainShader;
-                globalContext.m_graveyardTreeDecoratedMesh.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = graveYardTexture2D;
-                {
-                    Matrix matScale = MatrixScale(1.f, 1.f, 1.f);
-                    Matrix matRotation = MatrixRotate((Vector3) { 0.f, 0.f, 0.f }, 0.f);
-                    Matrix matTranslation = MatrixTranslate(2.0f, 0.f, 0.f);
-                    Matrix matTransform = MatrixMultiply(MatrixMultiply(matScale, matRotation), matTranslation);
-                    globalContext.m_graveyardTreeDecoratedMesh.transform = matTransform;
+        //     // Tree Decorated
+        //     {
+        //         globalContext->m_graveyardTreeDecoratedMesh = LoadModel("./res/models/graveyard/deadTreeDecorated/tree_dead_large_decorated.obj");
+        //         globalContext->m_graveyardTreeDecoratedMesh.materials[0].shader = globalContext->mainShader;
+        //         globalContext->m_graveyardTreeDecoratedMesh.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = graveYardTexture2D;
+        //         {
+        //             Matrix matScale = MatrixScale(1.f, 1.f, 1.f);
+        //             Matrix matRotation = MatrixRotate((Vector3) { 0.f, 0.f, 0.f }, 0.f);
+        //             Matrix matTranslation = MatrixTranslate(2.0f, 0.f, 0.f);
+        //             Matrix matTransform = MatrixMultiply(MatrixMultiply(matScale, matRotation), matTranslation);
+        //             globalContext->m_graveyardTreeDecoratedMesh.transform = matTransform;
 
-                    BoundingBox bbx = GetModelBoundingBox(globalContext.m_graveyardTreeDecoratedMesh);
-                    Vector3 originalAnchor = Vector3Divide(Vector3Add(bbx.min, bbx.max), (Vector3) { 2.0f, 2.0f, 2.0f });
-                    globalContext.m_graveyardTreeDecoratedMesh.transform.m12 += originalAnchor.x;
-                    globalContext.m_graveyardTreeDecoratedMesh.transform.m13 += 0.f;
-                    globalContext.m_graveyardTreeDecoratedMesh.transform.m14 += originalAnchor.z;
-                }
-            }
+        //             BoundingBox bbx = GetModelBoundingBox(globalContext->m_graveyardTreeDecoratedMesh);
+        //             Vector3 originalAnchor = Vector3Divide(Vector3Add(bbx.min, bbx.max), (Vector3) { 2.0f, 2.0f, 2.0f });
+        //             globalContext->m_graveyardTreeDecoratedMesh.transform.m12 += originalAnchor.x;
+        //             globalContext->m_graveyardTreeDecoratedMesh.transform.m13 += 0.f;
+        //             globalContext->m_graveyardTreeDecoratedMesh.transform.m14 += originalAnchor.z;
+        //         }
+        //     }
 
-            // Pine Orange Large
-            {
-                globalContext.m_graveyardPineLargeMesh = LoadModel("./res/models/graveyard/deadTreeDecorated/tree_pine_orange_large.obj");
-                globalContext.m_graveyardPineLargeMesh.materials[0].shader = globalContext.mainShader;
-                globalContext.m_graveyardPineLargeMesh.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = graveYardTexture2D;
-                {
-                    Matrix matScale = MatrixScale(1.f, 1.f, 1.f);
-                    Matrix matRotation = MatrixRotate((Vector3) { 0.f, 0.f, 0.f }, 0.f);
-                    Matrix matTranslation = MatrixTranslate(2.0f, 0.f, 0.f);
-                    Matrix matTransform = MatrixMultiply(MatrixMultiply(matScale, matRotation), matTranslation);
-                    globalContext.m_graveyardPineLargeMesh.transform = matTransform;
+        //     // Pine Orange Large
+        //     {
+        //         globalContext->m_graveyardPineLargeMesh = LoadModel("./res/models/graveyard/deadTreeDecorated/tree_pine_orange_large.obj");
+        //         globalContext->m_graveyardPineLargeMesh.materials[0].shader = globalContext->mainShader;
+        //         globalContext->m_graveyardPineLargeMesh.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = graveYardTexture2D;
+        //         {
+        //             Matrix matScale = MatrixScale(1.f, 1.f, 1.f);
+        //             Matrix matRotation = MatrixRotate((Vector3) { 0.f, 0.f, 0.f }, 0.f);
+        //             Matrix matTranslation = MatrixTranslate(2.0f, 0.f, 0.f);
+        //             Matrix matTransform = MatrixMultiply(MatrixMultiply(matScale, matRotation), matTranslation);
+        //             globalContext->m_graveyardPineLargeMesh.transform = matTransform;
 
-                    BoundingBox bbx = GetModelBoundingBox(globalContext.m_graveyardPineLargeMesh);
-                    Vector3 originalAnchor = Vector3Divide(Vector3Add(bbx.min, bbx.max), (Vector3) { 2.0f, 2.0f, 2.0f });
-                    globalContext.m_graveyardPineLargeMesh.transform.m12 += originalAnchor.x;
-                    globalContext.m_graveyardPineLargeMesh.transform.m13 += 0.f;
-                    globalContext.m_graveyardPineLargeMesh.transform.m14 += originalAnchor.z;
-                }
-            }
+        //             BoundingBox bbx = GetModelBoundingBox(globalContext->m_graveyardPineLargeMesh);
+        //             Vector3 originalAnchor = Vector3Divide(Vector3Add(bbx.min, bbx.max), (Vector3) { 2.0f, 2.0f, 2.0f });
+        //             globalContext->m_graveyardPineLargeMesh.transform.m12 += originalAnchor.x;
+        //             globalContext->m_graveyardPineLargeMesh.transform.m13 += 0.f;
+        //             globalContext->m_graveyardPineLargeMesh.transform.m14 += originalAnchor.z;
+        //         }
+        //     }
 
-            // Arch Gate
-            {
-                globalContext.m_graveyardArchGateMesh = LoadModel("./res/models/graveyard/deadTreeDecorated/arch_gate.obj");
-                globalContext.m_graveyardArchGateMesh.materials[0].shader = globalContext.mainShader;
-                globalContext.m_graveyardArchGateMesh.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = graveYardTexture2D;
-                {
-                    Matrix matScale = MatrixScale(1.f, 1.f, 1.f);
-                    Matrix matRotation = MatrixRotate((Vector3) { 0.f, 0.f, 0.f }, 0.f);
-                    Matrix matTranslation = MatrixTranslate(1.0f, 0.f, 2.f);
-                    Matrix matTransform = MatrixMultiply(MatrixMultiply(matScale, matRotation), matTranslation);
-                    globalContext.m_graveyardArchGateMesh.transform = matTransform;
+        //     // Arch Gate
+        //     {
+        //         globalContext->m_graveyardArchGateMesh = LoadModel("./res/models/graveyard/deadTreeDecorated/arch_gate.obj");
+        //         globalContext->m_graveyardArchGateMesh.materials[0].shader = globalContext->mainShader;
+        //         globalContext->m_graveyardArchGateMesh.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = graveYardTexture2D;
+        //         {
+        //             Matrix matScale = MatrixScale(1.f, 1.f, 1.f);
+        //             Matrix matRotation = MatrixRotate((Vector3) { 0.f, 0.f, 0.f }, 0.f);
+        //             Matrix matTranslation = MatrixTranslate(1.0f, 0.f, 2.f);
+        //             Matrix matTransform = MatrixMultiply(MatrixMultiply(matScale, matRotation), matTranslation);
+        //             globalContext->m_graveyardArchGateMesh.transform = matTransform;
 
-                    BoundingBox bbx = GetModelBoundingBox(globalContext.m_graveyardArchGateMesh);
-                    Vector3 originalAnchor = Vector3Divide(Vector3Add(bbx.min, bbx.max), (Vector3) { 2.0f, 2.0f, 2.0f });
-                    globalContext.m_graveyardArchGateMesh.transform.m12 += originalAnchor.x;
-                    globalContext.m_graveyardArchGateMesh.transform.m13 += 0.f;
-                    globalContext.m_graveyardArchGateMesh.transform.m14 += originalAnchor.z;
-                }
-            }
-        }
+        //             BoundingBox bbx = GetModelBoundingBox(globalContext->m_graveyardArchGateMesh);
+        //             Vector3 originalAnchor = Vector3Divide(Vector3Add(bbx.min, bbx.max), (Vector3) { 2.0f, 2.0f, 2.0f });
+        //             globalContext->m_graveyardArchGateMesh.transform.m12 += originalAnchor.x;
+        //             globalContext->m_graveyardArchGateMesh.transform.m13 += 0.f;
+        //             globalContext->m_graveyardArchGateMesh.transform.m14 += originalAnchor.z;
+        //         }
+        //     }
+        // }
 
-        globalContext.lights[0] = CreateLight(LIGHT_POINT, (Vector3) { -2, 1, -2 }, Vector3Zero(), YELLOW, globalContext.mainShader);
-        globalContext.lights[1] = CreateLight(LIGHT_POINT, (Vector3) { 2, 1, 2 }, Vector3Zero(), RED, globalContext.mainShader);
-        globalContext.lights[2] = CreateLight(LIGHT_POINT, (Vector3) { -2, 1, 2 }, Vector3Zero(), GREEN, globalContext.mainShader);
-        globalContext.lights[3] = CreateLight(LIGHT_POINT, (Vector3) { 2, 1, -2 }, Vector3Zero(), BLUE, globalContext.mainShader);
+        globalContext->lights[0] = CreateLight(LIGHT_POINT, (Vector3) { -2, 1, -2 }, Vector3Zero(), YELLOW, globalContext->mainShader);
+        globalContext->lights[1] = CreateLight(LIGHT_POINT, (Vector3) { 2, 1, 2 }, Vector3Zero(), RED, globalContext->mainShader);
+        globalContext->lights[2] = CreateLight(LIGHT_POINT, (Vector3) { -2, 1, 2 }, Vector3Zero(), GREEN, globalContext->mainShader);
+        globalContext->lights[3] = CreateLight(LIGHT_POINT, (Vector3) { 2, 1, -2 }, Vector3Zero(), BLUE, globalContext->mainShader);
     }
 
     // Make raylib window as child
@@ -781,7 +664,7 @@ int appKickstart(int argc, char **argv)
     const uint64_t stackSize = appStackSizeGet();
     printf("App stack size left: %zu\n", stackSize);
 
-    appStart(&app, &globalContext);
+    appStart(&app, globalContext);
 
     RL_CloseWindow();
     mcHtml_Terminate();

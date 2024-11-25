@@ -6,6 +6,6 @@ typedef struct
 {
 	int32_t m_x;
 	int32_t m_y;
-	int32_t m_width;
-	int32_t m_height;
+	u32 m_width;
+	u32 m_height;
 } recti32_t;
